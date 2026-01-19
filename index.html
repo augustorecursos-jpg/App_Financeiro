@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saúde Financeira Pro - Dark Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --bg-dark: #0a0a0a;
+            --card-dark: #161616;
+            --border-dark: #262626;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #e5e5e5;
+        }
+
+        .dark-card {
+            background-color: var(--card-dark);
+            border: 1px solid var(--border-dark);
+        }
+
+        .tab-active {
+            color: #3b82f6;
+            border-bottom: 2px solid #3b82f6;
+        }
+
+        input, select {
+            background-color: #1f1f1f !important;
+            border: 1px solid var(--border-dark) !important;
+            color: white !important;
+        }
+
+        input::placeholder {
+            color: #525252;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #262626;
+            border-radius: 10px;
+        }
+
+        .neo-shadow {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="pb-20">
+
+    <!-- Header -->
+    <header class="p-8 border-b border-zinc-800 bg-black/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">Saúde Financeira</h1>
+                <p id="current-date-display" class="text-zinc-500 text-sm font-medium mt-1"></p>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="text-right hidden sm:block">
+                    <p class="text-xs text-zinc-500 uppercase">Status da Conta</p>
+                    <p class="text-sm font-semibold text-green-400">Premium Ativo</p>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center border border-zinc-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 mt-4">
+        
+        <!-- Navigation Tabs -->
+        <div class="flex gap-8 mb-8 border-b border-zinc-800 px-2">
+            <button onclick="switchTab('monthly')" id="tab-monthly" class="pb-4 font-semibold tab-active transition-all">Mensal</button>
+            <button onclick="switchTab('yearly')" id="tab-yearly" class="pb-4 font-semibold text-zinc-500 hover:text-zinc-300 transition-all">Anual</button>
+        </div>
+
+        <!-- Section: Monthly -->
+        <section id="section-monthly" class="space-y-6">
+            <!-- Balance Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="dark-card p-6 rounded-2xl neo-shadow">
+                    <p class="text-zinc-500 text-xs uppercase font-bold tracking-wider mb-2">Entradas</p>
+                    <p id="display-income" class="text-2xl font-bold text-emerald-400">R$ 0,00</p>
+                </div>
+                <div class="dark-card p-6 rounded-2xl neo-shadow">
+                    <p class="text-zinc-500 text-xs uppercase font-bold tracking-wider mb-2">Saídas</p>
+                    <p id="display-expenses" class="text-2xl font-bold text-rose-500">R$ 0,00</p>
+                </div>
+                <div class="dark-card p-6 rounded-2xl neo-shadow border-t-2 border-blue-500">
+                    <p class="text-zinc-500 text-xs uppercase font-bold tracking-wider mb-2">Líquido</p>
+                    <p id="display-balance" class="text-2xl font-bold text-white">R$ 0,00</p>
+                </div>
+            </div>
+
+            <!-- Add Entry Form -->
+            <div class="dark-card p-6 rounded-2xl shadow-xl">
+                <h3 class="text-lg font-semibold mb-5 text-white flex items-center gap-2">
+                    <span class="w-1 h-5 bg-blue-500 rounded-full"></span>
+                    Novo Lançamento
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <input type="text" id="desc-input" placeholder="O que é?" class="p-3 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 transition-all">
+                    <input type="number" id="value-input" placeholder="Valor R$" class="p-3 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 transition-all">
+                    <select id="type-input" class="p-3 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 transition-all appearance-none">
+                        <option value="renda">Renda / Salário</option>
+                        <option value="fixa">Despesa Fixa</option>
+                        <option value="variavel">Despesa Variável</option>
+                        <option value="esporadica">Despesa Esporádica</option>
+                    </select>
+                    <button onclick="addEntry()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold p-3 rounded-xl transition-all shadow-lg active:scale-95">
+                        Adicionar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Transaction List -->
+            <div class="dark-card p-6 rounded-2xl">
+                <h3 class="text-lg font-semibold mb-6 text-white">Atividades Recentes</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-zinc-500 text-xs uppercase border-b border-zinc-800">
+                                <th class="pb-4 font-bold">Descrição</th>
+                                <th class="pb-4 font-bold">Categoria</th>
+                                <th class="pb-4 font-bold text-right">Valor</th>
+                                <th class="pb-4 font-bold text-center"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaction-history" class="text-zinc-300">
+                            <!-- JS Inject -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Yearly -->
+        <section id="section-yearly" class="hidden space-y-6">
+            <div class="dark-card p-6 rounded-2xl">
+                <h3 class="text-lg font-semibold mb-6 text-white text-center">Desempenho Anual</h3>
+                <div class="h-72">
+                    <canvas id="yearlyChart"></canvas>
+                </div>
+            </div>
+
+            <div id="yearly-summary-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <!-- JS Inject -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-white px-8 py-4 rounded-2xl shadow-2xl opacity-0 transition-all duration-300 pointer-events-none z-[100] flex items-center gap-3">
+        <div id="toast-icon" class="w-2 h-2 rounded-full bg-blue-500"></div>
+        <span id="toast-text">Ação concluída</span>
+    </div>
+
+    <script>
+        let transactions = JSON.parse(localStorage.getItem('finances_dark')) || [];
+        let chartInstance = null;
+        const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            document.getElementById('current-date-display').innerText = `${months[now.getMonth()]} ${now.getFullYear()}`;
+            renderMonthly();
+        });
+
+        function switchTab(tab) {
+            const monthlySec = document.getElementById('section-monthly');
+            const yearlySec = document.getElementById('section-yearly');
+            const tabM = document.getElementById('tab-monthly');
+            const tabY = document.getElementById('tab-yearly');
+
+            if (tab === 'monthly') {
+                monthlySec.classList.remove('hidden');
+                yearlySec.classList.add('hidden');
+                tabM.classList.add('tab-active');
+                tabY.classList.remove('tab-active');
+                renderMonthly();
+            } else {
+                monthlySec.classList.add('hidden');
+                yearlySec.classList.remove('hidden');
+                tabY.classList.add('tab-active');
+                tabM.classList.remove('tab-active');
+                renderYearly();
+            }
+        }
+
+        function addEntry() {
+            const desc = document.getElementById('desc-input').value;
+            const val = parseFloat(document.getElementById('value-input').value);
+            const type = document.getElementById('type-input').value;
+            const date = new Date();
+
+            if (!desc || isNaN(val) || val <= 0) {
+                showToast("Dados incompletos!", "error");
+                return;
+            }
+
+            transactions.push({
+                id: Date.now(),
+                description: desc,
+                value: val,
+                type: type,
+                month: date.getMonth(),
+                year: date.getFullYear()
+            });
+
+            saveData();
+            renderMonthly();
+            document.getElementById('desc-input').value = "";
+            document.getElementById('value-input').value = "";
+            showToast("Lançamento salvo!", "success");
+        }
+
+        function deleteTransaction(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            saveData();
+            renderMonthly();
+            showToast("Item removido", "info");
+        }
+
+        function saveData() {
+            localStorage.setItem('finances_dark', JSON.stringify(transactions));
+        }
+
+        function formatCurrency(val) {
+            return val.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' });
+        }
+
+        function renderMonthly() {
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            const monthList = transactions.filter(t => t.month === currentMonth && t.year === currentYear);
+
+            let income = 0;
+            let expenses = 0;
+            const tbody = document.getElementById('transaction-history');
+            tbody.innerHTML = "";
+
+            monthList.forEach(t => {
+                const isIncome = t.type === 'renda';
+                if (isIncome) income += t.value;
+                else expenses += t.value;
+
+                const row = document.createElement('tr');
+                row.className = "border-b border-zinc-900 hover:bg-zinc-800/30 transition-colors";
+                row.innerHTML = `
+                    <td class="py-5 font-medium text-white">${t.description}</td>
+                    <td class="py-5">
+                        <span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase ${getTypeStyles(t.type)}">${t.type}</span>
+                    </td>
+                    <td class="py-5 text-right font-semibold ${isIncome ? 'text-emerald-400' : 'text-rose-400'}">
+                        ${isIncome ? '+' : '-'} ${formatCurrency(t.value)}
+                    </td>
+                    <td class="py-5 text-right pl-4">
+                        <button onclick="deleteTransaction(${t.id})" class="p-2 text-zinc-600 hover:text-rose-500 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('display-income').innerText = formatCurrency(income);
+            document.getElementById('display-expenses').innerText = formatCurrency(expenses);
+            const balance = income - expenses;
+            const balanceEl = document.getElementById('display-balance');
+            balanceEl.innerText = formatCurrency(balance);
+            balanceEl.className = `text-2xl font-bold ${balance >= 0 ? 'text-white' : 'text-orange-400'}`;
+        }
+
+        function getTypeStyles(type) {
+            switch(type) {
+                case 'renda': return 'bg-emerald-950/50 text-emerald-400 border border-emerald-900';
+                case 'fixa': return 'bg-blue-950/50 text-blue-400 border border-blue-900';
+                case 'variavel': return 'bg-purple-950/50 text-purple-400 border border-purple-900';
+                case 'esporadica': return 'bg-amber-950/50 text-amber-400 border border-amber-900';
+                default: return 'bg-zinc-800 text-zinc-400';
+            }
+        }
+
+        function renderYearly() {
+            const currentYear = new Date().getFullYear();
+            const monthlyData = Array(12).fill(0).map(() => ({ income: 0, expenses: 0 }));
+
+            transactions.filter(t => t.year === currentYear).forEach(t => {
+                if (t.type === 'renda') monthlyData[t.month].income += t.value;
+                else monthlyData[t.month].expenses += t.value;
+            });
+
+            const ctx = document.getElementById('yearlyChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            
+            Chart.defaults.color = '#71717a';
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months.map(m => m.substring(0, 3)),
+                    datasets: [{
+                        label: 'Despesas',
+                        data: monthlyData.map(d => d.expenses),
+                        backgroundColor: '#f43f5e',
+                        borderRadius: 6
+                    }, {
+                        label: 'Renda',
+                        data: monthlyData.map(d => d.income),
+                        backgroundColor: '#10b981',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } 
+                    },
+                    scales: { 
+                        y: { beginAtZero: true, grid: { color: '#262626' } }, 
+                        x: { grid: { display: false } } 
+                    }
+                }
+            });
+
+            const yearlyList = document.getElementById('yearly-summary-list');
+            yearlyList.innerHTML = "";
+
+            months.forEach((m, idx) => {
+                const data = monthlyData[idx];
+                const card = document.createElement('div');
+                card.className = "dark-card p-5 rounded-xl";
+                card.innerHTML = `
+                    <p class="font-bold text-zinc-100 mb-3 border-b border-zinc-800 pb-2">${m}</p>
+                    <div class="flex justify-between text-xs mb-2">
+                        <span class="text-zinc-500">Gastos:</span>
+                        <span class="text-rose-400">${formatCurrency(data.expenses)}</span>
+                    </div>
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="text-zinc-500">Saldo:</span>
+                        <span class="${ (data.income - data.expenses) >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                            ${formatCurrency(data.income - data.expenses)}
+                        </span>
+                    </div>
+                `;
+                yearlyList.appendChild(card);
+            });
+        }
+
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toast-text');
+            const toastIcon = document.getElementById('toast-icon');
+            
+            toastText.innerText = msg;
+            
+            if(type === 'error') toastIcon.className = "w-2 h-2 rounded-full bg-rose-500";
+            else if(type === 'success') toastIcon.className = "w-2 h-2 rounded-full bg-emerald-500";
+            else toastIcon.className = "w-2 h-2 rounded-full bg-blue-500";
+
+            toast.style.opacity = "1";
+            toast.style.transform = "translateX(-50%) translateY(-10px)";
+            
+            setTimeout(() => { 
+                toast.style.opacity = "0"; 
+                toast.style.transform = "translateX(-50%) translateY(0)";
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
