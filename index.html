@@ -64,6 +64,13 @@
         
         .hidden { display: none !important; }
 
+        /* Status de Pago */
+        .is-paid {
+            opacity: 0.5;
+            text-decoration: line-through;
+            filter: grayscale(1);
+        }
+
         /* Estilos para a tabela anual densa */
         .yearly-table th, .yearly-table td {
             padding: 12px 8px;
@@ -143,7 +150,10 @@
         <header class="p-6 border-b border-zinc-900 bg-black/40 backdrop-blur-xl sticky top-0 z-50">
             <div class="max-w-6xl mx-auto flex justify-between items-center">
                 <div class="flex items-center gap-4">
-                    <img id="user-avatar" src="" class="w-12 h-12 rounded-full border-2 border-blue-600 object-cover">
+                    <div class="relative">
+                        <img id="user-avatar" src="" class="w-12 h-12 rounded-full border-2 border-blue-600 object-cover">
+                        <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-black rounded-full"></div>
+                    </div>
                     <div>
                         <h1 class="text-lg font-extrabold tracking-tight text-white flex items-center gap-2">
                             Olá, <span id="user-name-display">Usuário</span>
@@ -163,6 +173,19 @@
 
             <!-- Dashboard Mensal -->
             <section id="section-monthly" class="space-y-8 max-w-4xl mx-auto">
+                <!-- Barra de Progresso de Pagamento -->
+                <div class="bubble-card p-4 flex items-center gap-4">
+                    <div class="flex-1">
+                        <div class="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
+                            <span class="text-zinc-500">Progresso de Pagamentos</span>
+                            <span id="payment-percent" class="text-blue-400">0%</span>
+                        </div>
+                        <div class="w-full bg-zinc-900 h-2 rounded-full overflow-hidden">
+                            <div id="payment-bar" class="bg-blue-600 h-full transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="bubble-card p-6 border-l-4 border-emerald-500/50">
                         <span class="text-zinc-500 text-[10px] font-black uppercase block mb-2 tracking-tighter">Entradas (Mês)</span>
@@ -228,13 +251,14 @@
 
                 <div class="bubble-card p-8">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-                        <h3 class="text-lg font-bold">Histórico do Mês</h3>
+                        <h3 class="text-lg font-bold">Controle do Mês</h3>
                         <select onchange="changeFilterMonth(this.value)" id="month-filter" class="text-xs p-3 rounded-xl bg-zinc-800 font-bold outline-none border-none cursor-pointer px-6"></select>
                     </div>
                     <div class="overflow-x-auto custom-scroll">
                         <table class="w-full text-left">
                             <thead>
                                 <tr class="text-zinc-500 text-[10px] uppercase border-b border-zinc-800/50 font-black tracking-widest">
+                                    <th class="pb-4 w-10">Status</th>
                                     <th class="pb-4">Descrição</th>
                                     <th class="pb-4">Categoria</th>
                                     <th class="pb-4 text-right">Valor</th>
@@ -343,16 +367,16 @@
         function handleAuth() {
             const login = document.getElementById('auth-login').value;
             const pass = document.getElementById('auth-pass').value;
-            if(!login || !pass) return showToast("Preencha os campos!", "error");
+            if(!login || !pass) return showToast("Preencha os campos!");
 
             if(isSignup) {
                 const name = document.getElementById('reg-name').value;
-                if(!name) return showToast("Nome é obrigatório!", "error");
-                currentUser = { name, login, photo: profilePhoto || `https://ui-avatars.com/api/?name=${name}&background=random` };
+                if(!name) return showToast("Nome é obrigatório!");
+                currentUser = { name, login, photo: profilePhoto || `https://ui-avatars.com/api/?name=${name}&background=333&color=fff` };
                 localStorage.setItem('user_session', JSON.stringify(currentUser));
             } else {
                 const stored = localStorage.getItem('user_session');
-                if(!stored) return showToast("Usuário não existe!", "error");
+                if(!stored) return showToast("Usuário não existe!");
                 currentUser = JSON.parse(stored);
             }
             enterApp();
@@ -415,35 +439,51 @@
             const recurrence = document.getElementById('recurrence-input').value;
             const inst = parseInt(document.getElementById('installments-input').value) || 1;
 
-            if(!desc || isNaN(val)) return showToast("Verifique os valores!", "error");
+            if(!desc || isNaN(val)) return showToast("Verifique os valores!");
 
             if(recurrence === 'unico') {
-                transactions.push({ id: Date.now().toString(), description: desc, value: val, type, month: startMonth, year: selectedYear });
+                transactions.push({ id: Date.now().toString(), description: desc, value: val, type, month: startMonth, year: selectedYear, paid: false });
             } else if(recurrence === 'fixo') {
                 for(let m = startMonth; m < 12; m++) {
-                    transactions.push({ id: Date.now() + m, description: desc, value: val, type, month: m, year: selectedYear });
+                    transactions.push({ id: Date.now() + m, description: desc, value: val, type, month: m, year: selectedYear, paid: false });
                 }
             } else {
                 for(let i=0; i<inst; i++) {
                     let m = startMonth + i; let y = selectedYear;
                     if(m > 11) { m %= 12; y++; }
-                    if(y === selectedYear) transactions.push({ id: Date.now() + i, description: `${desc} (${i+1}/${inst})`, value: val, type, month: m, year: y });
+                    if(y === selectedYear) transactions.push({ id: (Date.now() + i).toString(), description: `${desc} (${i+1}/${inst})`, value: val, type, month: m, year: y, paid: false });
                 }
             }
-            save(); renderMonthly(); clearInputs(); showToast("Lançamento salvo!");
+            save(); renderMonthly(); clearInputs(); showToast("Salvo com sucesso!");
+        }
+
+        function togglePaid(id) {
+            const tx = transactions.find(t => t.id === id);
+            if(tx) {
+                tx.paid = !tx.paid;
+                save();
+                renderMonthly();
+                showToast(tx.paid ? "Marcado como pago" : "Pagamento removido");
+            }
         }
 
         function renderMonthly() {
             const data = transactions.filter(t => t.month === selectedMonth && t.year === selectedYear);
-            let inc = 0, exp = 0;
+            let inc = 0, exp = 0, paidCount = 0;
             const tbody = document.getElementById('transaction-history');
             tbody.innerHTML = "";
 
             data.forEach(t => {
                 const isRenda = t.type === 'Renda';
                 if(isRenda) inc += t.value; else exp += t.value;
+                if(t.paid) paidCount++;
+
                 tbody.innerHTML += `
-                    <tr class="border-b border-zinc-900/50 hover:bg-zinc-800/30 group transition-colors">
+                    <tr class="border-b border-zinc-900/50 hover:bg-zinc-800/30 group transition-colors ${t.paid ? 'is-paid' : ''}">
+                        <td class="py-5">
+                            <input type="checkbox" ${t.paid ? 'checked' : ''} onclick="togglePaid('${t.id}')" 
+                                class="w-5 h-5 rounded-lg border-2 border-zinc-700 bg-transparent checked:bg-blue-600 transition-all cursor-pointer">
+                        </td>
                         <td class="py-5 font-bold text-zinc-100">${t.description}</td>
                         <td class="py-5"><span class="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-zinc-800 text-zinc-400">${t.type}</span></td>
                         <td class="py-5 text-right font-mono font-bold ${isRenda ? 'text-emerald-400' : 'text-rose-400'}">R$ ${t.value.toLocaleString('pt-BR')}</td>
@@ -453,6 +493,12 @@
                     </tr>
                 `;
             });
+
+            // Atualiza barra de progresso
+            const totalTasks = data.length;
+            const percent = totalTasks > 0 ? Math.round((paidCount / totalTasks) * 100) : 0;
+            document.getElementById('payment-bar').style.width = `${percent}%`;
+            document.getElementById('payment-percent').innerText = `${percent}%`;
 
             document.getElementById('display-income').innerText = `R$ ${inc.toLocaleString('pt-BR')}`;
             document.getElementById('display-expenses').innerText = `R$ ${exp.toLocaleString('pt-BR')}`;
@@ -489,7 +535,6 @@
                 return { inc, exp, balance: inc - exp };
             });
 
-            // Linhas por categoria
             categories.forEach(cat => {
                 let row = `<tr><td class="font-bold text-zinc-400">${cat}</td>`;
                 let catTotal = 0;
@@ -502,7 +547,6 @@
                 tbody.innerHTML += row;
             });
 
-            // Linha de Saldo Final
             let saldoRow = `<tr class="bg-zinc-900/40"><td class="font-black text-white italic">SALDO FINAL</td>`;
             monthlyData.forEach(d => {
                 saldoRow += `<td class="font-black ${d.balance >= 0 ? 'text-emerald-400' : 'text-rose-500'}">R$ ${d.balance.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td>`;
@@ -510,12 +554,10 @@
             saldoRow += `<td class="font-black text-blue-400 border-l border-zinc-800">R$ ${(yearlyTotals.inc - yearlyTotals.exp).toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td></tr>`;
             tbody.innerHTML += saldoRow;
 
-            // Atualiza Cards de Resumo
             document.getElementById('display-yearly-income').innerText = `R$ ${yearlyTotals.inc.toLocaleString('pt-BR')}`;
             document.getElementById('display-yearly-expenses').innerText = `R$ ${yearlyTotals.exp.toLocaleString('pt-BR')}`;
             document.getElementById('display-yearly-balance').innerText = `R$ ${(yearlyTotals.inc - yearlyTotals.exp).toLocaleString('pt-BR')}`;
 
-            // Gráfico de Linha (Curva de Saldo)
             const ctx = document.getElementById('yearlyChart').getContext('2d');
             if(chartInstance) chartInstance.destroy();
             chartInstance = new Chart(ctx, {
@@ -549,7 +591,11 @@
             const t = document.getElementById('toast');
             document.getElementById('toast-text').innerText = msg;
             t.style.opacity = "1";
-            setTimeout(() => t.style.opacity = "0", 3000);
+            t.style.transform = "translateX(-50%) translateY(-10px)";
+            setTimeout(() => {
+                t.style.opacity = "0";
+                t.style.transform = "translateX(-50%) translateY(0)";
+            }, 3000);
         }
 
         window.onload = () => {
