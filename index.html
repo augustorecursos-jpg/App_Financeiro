@@ -135,11 +135,13 @@
                         <input type="number" id="value-input" placeholder="R$ 0,00" class="w-full p-3.5 rounded-2xl outline-none">
                     </div>
                     <div class="space-y-2">
-                        <label class="text-xs text-zinc-500 ml-2 font-bold uppercase">Categoria</label>
+                        <label class="text-xs text-zinc-500 ml-2 font-bold uppercase">Classificação</label>
                         <select id="type-input" class="w-full p-3.5 rounded-2xl outline-none appearance-none">
-                            <option value="renda">Renda</option>
-                            <option value="fixa">Despesa Fixa</option>
-                            <option value="variavel">Despesa Variável</option>
+                            <option value="Despesa Fixa">Despesa Fixa</option>
+                            <option value="Despesa Variavel">Despesa Variável</option>
+                            <option value="Investimento">Investimento</option>
+                            <option value="Poupança">Poupança</option>
+                            <option value="Renda">Renda</option>
                         </select>
                     </div>
                     
@@ -178,7 +180,7 @@
                         <thead>
                             <tr class="text-zinc-500 text-[10px] uppercase border-b border-zinc-800 font-black tracking-tighter">
                                 <th class="pb-4">Descrição</th>
-                                <th class="pb-4">Tipo</th>
+                                <th class="pb-4">Categoria</th>
                                 <th class="pb-4 text-right">Valor</th>
                                 <th class="pb-4"></th>
                             </tr>
@@ -263,7 +265,6 @@
             if (recurrence === 'unico') {
                 transactions.push({ id: baseId, description: desc, value: val, type: type, month: selectedMonth, year: selectedYear, isRecurrent: false });
             } else if (recurrence === 'recorrente') {
-                // Adiciona para o mês atual e marca como fixo para o sistema projetar
                 transactions.push({ id: baseId, description: desc, value: val, type: type, month: selectedMonth, year: selectedYear, isRecurrent: true });
             } else if (recurrence === 'parcelado') {
                 for (let i = 0; i < parcelas; i++) {
@@ -304,18 +305,12 @@
         }
 
         function getMonthlyData(month, year) {
-            // Pega transações reais do mês
             let data = transactions.filter(t => t.month === month && t.year === year);
-            
-            // Adiciona projeções de itens recorrentes que foram criados em meses anteriores
             const recurrents = transactions.filter(t => t.isRecurrent && (t.year < year || (t.year === year && t.month < month)));
-            
-            // Remove duplicatas se o usuário já registrou o recorrente no mês atual manualmente (prevenção simples)
             recurrents.forEach(rec => {
                 const exists = data.some(d => d.description === rec.description && d.isRecurrent);
                 if (!exists) data.push({...rec, month: month, year: year, projected: true});
             });
-
             return data;
         }
 
@@ -326,14 +321,20 @@
             tbody.innerHTML = "";
 
             data.forEach(t => {
-                const isInc = t.type === 'renda';
+                const isInc = t.type === 'Renda';
                 if (isInc) inc += t.value; else exp += t.value;
 
                 const tr = document.createElement('tr');
                 tr.className = "border-b border-zinc-900/50 hover:bg-zinc-800/20";
+                
+                let badgeColor = "bg-zinc-800 text-zinc-500";
+                if(t.type === 'Renda') badgeColor = "bg-emerald-500/10 text-emerald-500";
+                if(t.type === 'Investimento') badgeColor = "bg-blue-500/10 text-blue-500";
+                if(t.type === 'Poupança') badgeColor = "bg-purple-500/10 text-purple-500";
+
                 tr.innerHTML = `
                     <td class="py-5 font-bold text-zinc-100">${t.description} ${t.projected ? '<span class="text-[9px] text-blue-500 font-black ml-1 uppercase">[Fixo]</span>' : ''}</td>
-                    <td class="py-5"><span class="px-2 py-0.5 rounded text-[9px] font-black uppercase ${t.type === 'renda' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-800 text-zinc-500'}">${t.type}</span></td>
+                    <td class="py-5"><span class="px-2 py-0.5 rounded text-[9px] font-black uppercase ${badgeColor}">${t.type}</span></td>
                     <td class="py-5 text-right font-mono font-bold ${isInc ? 'text-emerald-400' : 'text-rose-400'}">${isInc ? '+' : '-'} R$ ${t.value.toFixed(2)}</td>
                     <td class="py-5 text-right"><button onclick="deleteTransaction(${t.id})" class="text-zinc-700 hover:text-rose-500 transition-colors">×</button></td>
                 `;
@@ -358,8 +359,8 @@
         function renderYearly() {
             const chartData = months.map((_, i) => {
                 const data = getMonthlyData(i, selectedYear);
-                const inc = data.filter(t => t.type === 'renda').reduce((s, t) => s + t.value, 0);
-                const exp = data.filter(t => t.type !== 'renda').reduce((s, t) => s + t.value, 0);
+                const inc = data.filter(t => t.type === 'Renda').reduce((s, t) => s + t.value, 0);
+                const exp = data.filter(t => t.type !== 'Renda').reduce((s, t) => s + t.value, 0);
                 return { inc, exp };
             });
 
