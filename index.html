@@ -116,6 +116,22 @@
                             <option value="Poupança">Poupança</option>
                         </select>
                     </div>
+                    
+                    <!-- Campos de Recorrência -->
+                    <div class="space-y-2">
+                        <label class="text-xs text-zinc-500 ml-2 font-bold uppercase">Recorrência</label>
+                        <select id="recurrence-input" onchange="toggleParcelInput()" class="w-full p-3.5 rounded-2xl outline-none appearance-none">
+                            <option value="unico">Apenas este mês</option>
+                            <option value="fixo">Mensal (Fixo)</option>
+                            <option value="parcelado">Parcelado</option>
+                        </select>
+                    </div>
+
+                    <div id="parcel-container" class="space-y-2 hidden">
+                        <label class="text-xs text-zinc-500 ml-2 font-bold uppercase">Qtd. Parcelas</label>
+                        <input type="number" id="installments-input" placeholder="Ex: 12" min="2" class="w-full p-3.5 rounded-2xl outline-none">
+                    </div>
+
                     <div class="flex items-end gap-2 lg:col-span-3">
                         <button id="btn-submit" onclick="addEntry()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all uppercase text-xs tracking-widest">
                             Salvar Lançamento
@@ -194,7 +210,7 @@
             if (stored) {
                 transactions = JSON.parse(stored);
             } else {
-                transactions = []; // Inicia vazio por solicitação do usuário
+                transactions = [];
             }
         }
 
@@ -207,6 +223,7 @@
 
         function initMonthFilter() {
             const filter = document.getElementById('month-filter');
+            filter.innerHTML = "";
             months.forEach((m, i) => {
                 const opt = document.createElement('option');
                 opt.value = i;
@@ -214,6 +231,16 @@
                 if(i === selectedMonth) opt.selected = true;
                 filter.appendChild(opt);
             });
+        }
+
+        function toggleParcelInput() {
+            const recurrence = document.getElementById('recurrence-input').value;
+            const container = document.getElementById('parcel-container');
+            if (recurrence === 'parcelado') {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
         }
 
         function updateDisplayDate() {
@@ -230,11 +257,14 @@
             const desc = document.getElementById('desc-input').value;
             const val = parseFloat(document.getElementById('value-input').value);
             const type = document.getElementById('type-input').value;
+            const recurrence = document.getElementById('recurrence-input').value;
+            const installments = parseInt(document.getElementById('installments-input').value) || 1;
             const editId = document.getElementById('edit-id').value;
 
             if (!desc || isNaN(val)) return showToast("Preencha descrição e valor!", "error");
 
             if (editId) {
+                // Ao editar, editamos apenas a instância específica para não quebrar parcelamentos passados
                 const index = transactions.findIndex(t => t.id === editId);
                 if (index !== -1) {
                     transactions[index] = { ...transactions[index], description: desc, value: val, type: type };
@@ -242,15 +272,35 @@
                 cancelEdit();
                 showToast("Lançamento atualizado!");
             } else {
-                transactions.push({
-                    id: Math.random().toString(36).substr(2, 9),
-                    description: desc,
-                    value: val,
-                    type: type,
-                    month: selectedMonth,
-                    year: selectedYear
-                });
-                showToast("Lançamento adicionado!");
+                const groupId = Math.random().toString(36).substr(2, 9);
+                
+                if (recurrence === 'unico') {
+                    transactions.push({ id: Math.random().toString(36).substr(2, 9), description: desc, value: val, type: type, month: selectedMonth, year: selectedYear, recurrence: 'unico' });
+                } else if (recurrence === 'fixo') {
+                    // Adiciona para todos os meses do ano a partir do selecionado
+                    for (let m = selectedMonth; m < 12; m++) {
+                        transactions.push({ id: Math.random().toString(36).substr(2, 9), groupId, description: desc, value: val, type: type, month: m, year: selectedYear, recurrence: 'fixo' });
+                    }
+                } else if (recurrence === 'parcelado') {
+                    for (let i = 0; i < installments; i++) {
+                        let m = selectedMonth + i;
+                        let y = selectedYear;
+                        if (m > 11) { m = m % 12; y++; } // Simples virada de ano
+                        if (y > selectedYear) break; // Limite para o ano atual do app para manter performance
+
+                        transactions.push({ 
+                            id: Math.random().toString(36).substr(2, 9), 
+                            groupId, 
+                            description: `${desc} (${i + 1}/${installments})`, 
+                            value: val, 
+                            type: type, 
+                            month: m, 
+                            year: y, 
+                            recurrence: 'parcelado' 
+                        });
+                    }
+                }
+                showToast("Lançamento(s) adicionado(s)!");
             }
 
             save();
@@ -267,8 +317,11 @@
             document.getElementById('value-input').value = t.value;
             document.getElementById('type-input').value = t.type;
             
-            document.getElementById('form-title').innerText = "Editando Lançamento";
-            document.getElementById('btn-submit').innerText = "Atualizar Dados";
+            // Esconde opções de recorrência na edição para evitar conflitos de lógica em lote
+            document.getElementById('recurrence-input').parentElement.classList.add('hidden');
+            
+            document.getElementById('form-title').innerText = "Editando Item";
+            document.getElementById('btn-submit').innerText = "Atualizar Item";
             document.getElementById('btn-cancel').classList.remove('hidden');
             document.getElementById('form-container').scrollIntoView({ behavior: 'smooth' });
         }
@@ -278,14 +331,24 @@
             document.getElementById('form-title').innerText = "Novo Lançamento";
             document.getElementById('btn-submit').innerText = "Salvar Lançamento";
             document.getElementById('btn-cancel').classList.add('hidden');
+            document.getElementById('recurrence-input').parentElement.classList.remove('hidden');
             clearInputs();
         }
 
         function deleteTransaction(id) {
-            transactions = transactions.filter(t => t.id !== id);
+            const t = transactions.find(item => item.id === id);
+            if (t && t.groupId) {
+                if (confirm("Este item faz parte de um grupo (fixo/parcelado). Deseja excluir TODOS os lançamentos deste grupo?")) {
+                    transactions = transactions.filter(item => item.groupId !== t.groupId);
+                } else {
+                    transactions = transactions.filter(item => item.id !== id);
+                }
+            } else {
+                transactions = transactions.filter(t => t.id !== id);
+            }
             save();
             renderMonthly();
-            showToast("Removido com sucesso", "error");
+            showToast("Removido", "error");
         }
 
         function renderMonthly() {
@@ -317,7 +380,10 @@
                 if(t.type === 'Despesa Fixa') badgeStyle = "bg-zinc-700/50 text-zinc-300";
 
                 tr.innerHTML = `
-                    <td class="py-4 pl-2 font-bold text-zinc-100">${t.description}</td>
+                    <td class="py-4 pl-2 font-bold text-zinc-100">
+                        ${t.description}
+                        ${t.recurrence === 'fixo' ? '<span class="ml-2 text-[8px] text-zinc-600 border border-zinc-800 px-1 rounded">FIXO</span>' : ''}
+                    </td>
                     <td class="py-4"><span class="px-2 py-0.5 rounded text-[9px] font-black uppercase ${badgeStyle}">${t.type}</span></td>
                     <td class="py-4 text-right font-mono font-bold ${isRenda ? 'text-emerald-400' : 'text-rose-400'}">R$ ${t.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                     <td class="py-4 text-right pr-2 space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -351,7 +417,6 @@
                 return { inc, exp, bal: inc - exp };
             });
 
-            // Resumo por Categoria
             const catTotals = {};
             categories.forEach(c => catTotals[c] = 0);
             transactions.filter(t => t.year === selectedYear).forEach(t => {
@@ -376,7 +441,6 @@
                 `;
             });
 
-            // Lista Mensal
             const summaryList = document.getElementById('yearly-summary-list');
             summaryList.innerHTML = "";
             months.forEach((m, i) => {
@@ -389,7 +453,6 @@
                 `;
             });
 
-            // Gráfico
             if (chartInstance) chartInstance.destroy();
             const ctx = document.getElementById('yearlyChart').getContext('2d');
             chartInstance = new Chart(ctx, {
@@ -416,6 +479,9 @@
         function clearInputs() { 
             document.getElementById('desc-input').value = ""; 
             document.getElementById('value-input').value = ""; 
+            document.getElementById('installments-input').value = "";
+            document.getElementById('recurrence-input').value = "unico";
+            toggleParcelInput();
         }
         function resetData() { 
             if(confirm("Deseja realmente apagar todos os lançamentos?")) {
