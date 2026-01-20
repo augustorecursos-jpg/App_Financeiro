@@ -238,6 +238,7 @@
                                 <tr>
                                     <th>Categoria</th>
                                     <th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th>
+                                    <th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
                                     <th>Total</th>
                                 </tr>
                             </thead>
@@ -368,7 +369,7 @@
                             <span class="text-[9px] text-zinc-500 font-black uppercase tracking-widest">${t.category}</span>
                         </div>
                     </div>
-                    <span class="text-sm font-bold ${t.category === 'Renda' ? 'text-emerald-400' : 'text-white'}">R$ ${t.val.toLocaleString('pt-BR')}</span>
+                    <span class="text-sm font-bold ${t.category === 'Renda' ? 'text-emerald-400' : 'text-white'}">R$ ${t.val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
                 `;
                 list.appendChild(div);
             });
@@ -384,16 +385,16 @@
             const categories = ["Despesa Fixa", "Despesa Esporádica", "Investimento", "Poupança", "Renda"];
 
             categories.forEach(cat => {
-                let row = `<tr><td class="text-xs font-bold text-white">${cat}</td>`;
+                let row = `<tr><td class="text-[10px] font-bold text-white whitespace-nowrap">${cat}</td>`;
                 let totalCat = 0;
-                for(let i=0; i<6; i++) {
+                for(let i=0; i<12; i++) {
                     const val = transactions
                         .filter(t => t.category === cat && t.month === i)
                         .reduce((acc, curr) => acc + curr.val, 0);
                     totalCat += val;
-                    row += `<td class="text-xs text-zinc-400">R$ ${val.toLocaleString('pt-BR')}</td>`;
+                    row += `<td class="text-[10px] text-zinc-400">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td>`;
                 }
-                row += `<td class="text-xs font-bold text-white">R$ ${totalCat.toLocaleString('pt-BR')}</td></tr>`;
+                row += `<td class="text-[10px] font-bold text-white">R$ ${totalCat.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td></tr>`;
                 body.innerHTML += row;
             });
         }
