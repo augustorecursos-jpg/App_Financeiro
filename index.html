@@ -21,24 +21,13 @@
             color: #f4f4f5;
         }
 
-        /* Efeito Bolha / Soft Glassmorphism */
         .bubble-card {
             background: linear-gradient(145deg, #161616, #0d0d0d);
             border: 1px solid rgba(255, 255, 255, 0.03);
             border-radius: 24px;
-            box-shadow: 
-                0 10px 40px -10px rgba(0, 0, 0, 0.5),
-                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
             transition: transform 0.3s ease;
         }
-
-        .bubble-card:hover {
-            transform: translateY(-2px);
-        }
-
-        .shadow-glow-blue { box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.3); }
-        .shadow-glow-green { box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.3); }
-        .shadow-glow-rose { box-shadow: 0 0 20px -5px rgba(244, 63, 94, 0.3); }
 
         .tab-active {
             color: #60a5fa;
@@ -49,7 +38,6 @@
             background-color: #1a1a1a !important;
             border: 1px solid #2d2d2d !important;
             color: white !important;
-            transition: all 0.2s ease;
         }
 
         input:focus, select:focus {
@@ -63,7 +51,6 @@
 </head>
 <body class="pb-20">
 
-    <!-- Header -->
     <header class="p-8 border-b border-zinc-900 bg-black/40 backdrop-blur-xl sticky top-0 z-50">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <div>
@@ -75,157 +62,150 @@
                 </h1>
                 <p id="current-date-display" class="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-1"></p>
             </div>
-            <div class="h-10 w-10 rounded-full border border-zinc-800 flex items-center justify-center bg-zinc-900 shadow-inner">
-                <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-            </div>
+            <button onclick="resetData()" class="text-[10px] text-zinc-600 hover:text-zinc-400 uppercase font-bold border border-zinc-800 px-3 py-1 rounded-full">Limpar Tudo</button>
         </div>
     </header>
 
     <main class="max-w-4xl mx-auto p-4 mt-6">
         
-        <!-- Tabs -->
         <div class="flex gap-8 mb-8 border-b border-zinc-900 px-2">
             <button onclick="switchTab('monthly')" id="tab-monthly" class="pb-4 font-bold tab-active">Visão Mensal</button>
             <button onclick="switchTab('yearly')" id="tab-yearly" class="pb-4 font-bold text-zinc-600 hover:text-zinc-400">Análise Anual</button>
         </div>
 
-        <!-- Section: Monthly -->
+        <!-- Visão Mensal -->
         <section id="section-monthly" class="space-y-8">
-            
-            <!-- Dashboard Cards (Efeito Bolha) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bubble-card p-6 shadow-glow-green">
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="text-zinc-500 text-xs font-bold uppercase">Entradas</span>
-                        <div class="p-2 bg-emerald-500/10 rounded-full"><svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg></div>
-                    </div>
+                <div class="bubble-card p-6 border-l-4 border-emerald-500/50">
+                    <span class="text-zinc-500 text-xs font-bold uppercase block mb-2">Entradas</span>
                     <p id="display-income" class="text-3xl font-bold text-white">R$ 0,00</p>
                 </div>
-                
-                <div class="bubble-card p-6 shadow-glow-rose">
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="text-zinc-500 text-xs font-bold uppercase">Saídas</span>
-                        <div class="p-2 bg-rose-500/10 rounded-full"><svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg></div>
-                    </div>
+                <div class="bubble-card p-6 border-l-4 border-rose-500/50">
+                    <span class="text-zinc-500 text-xs font-bold uppercase block mb-2">Saídas</span>
                     <p id="display-expenses" class="text-3xl font-bold text-white">R$ 0,00</p>
                 </div>
-
-                <div class="bubble-card p-6 shadow-glow-blue border-b-4 border-blue-500/50">
-                    <div class="flex justify-between items-start mb-4">
-                        <span class="text-zinc-500 text-xs font-bold uppercase">Líquido</span>
-                        <div class="p-2 bg-blue-500/10 rounded-full"><svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
-                    </div>
+                <div class="bubble-card p-6 border-l-4 border-blue-500/50">
+                    <span class="text-zinc-500 text-xs font-bold uppercase block mb-2">Líquido</span>
                     <p id="display-balance" class="text-3xl font-bold text-white">R$ 0,00</p>
                 </div>
             </div>
 
-            <!-- Formulário Inteligente -->
-            <div class="bubble-card p-8 bg-zinc-900/50">
-                <h3 class="text-lg font-bold mb-6 flex items-center gap-2 italic">
+            <!-- Formulário -->
+            <div class="bubble-card p-8 bg-zinc-900/50" id="form-container">
+                <h3 id="form-title" class="text-lg font-bold mb-6 flex items-center gap-2 italic">
                     <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                    Registrar Lançamento
+                    Novo Lançamento
                 </h3>
+                <input type="hidden" id="edit-id">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     <div class="space-y-2">
-                        <label class="text-xs text-zinc-500 ml-2 font-bold uppercase">O que você pagou/recebeu?</label>
-                        <input type="text" id="desc-input" placeholder="Ex: Aluguel, Salário..." class="w-full p-3.5 rounded-2xl outline-none">
+                        <label class="text-xs text-zinc-500 ml-2 font-bold uppercase">Descrição</label>
+                        <input type="text" id="desc-input" placeholder="Ex: Salário" class="w-full p-3.5 rounded-2xl outline-none">
                     </div>
                     <div class="space-y-2">
                         <label class="text-xs text-zinc-500 ml-2 font-bold uppercase">Valor</label>
-                        <input type="number" id="value-input" placeholder="R$ 0,00" class="w-full p-3.5 rounded-2xl outline-none">
+                        <input type="number" id="value-input" placeholder="0.00" step="0.01" class="w-full p-3.5 rounded-2xl outline-none">
                     </div>
                     <div class="space-y-2">
                         <label class="text-xs text-zinc-500 ml-2 font-bold uppercase">Classificação</label>
                         <select id="type-input" class="w-full p-3.5 rounded-2xl outline-none appearance-none">
+                            <option value="Renda">Renda</option>
                             <option value="Despesa Fixa">Despesa Fixa</option>
                             <option value="Despesa Variavel">Despesa Variável</option>
                             <option value="Investimento">Investimento</option>
                             <option value="Poupança">Poupança</option>
-                            <option value="Renda">Renda</option>
                         </select>
                     </div>
-                    
-                    <div class="space-y-2">
-                        <label class="text-xs text-zinc-500 ml-2 font-bold uppercase">Periodicidade</label>
-                        <select id="recurrence-input" onchange="toggleParcelas()" class="w-full p-3.5 rounded-2xl outline-none">
-                            <option value="unico">Apenas este mês</option>
-                            <option value="recorrente">Recorrente (Todo mês)</option>
-                            <option value="parcelado">Parcelado</option>
-                        </select>
-                    </div>
-
-                    <div id="parcelas-container" class="space-y-2 hidden">
-                        <label class="text-xs text-zinc-500 ml-2 font-bold uppercase">Qtd de Parcelas</label>
-                        <input type="number" id="parcelas-input" value="2" min="2" class="w-full p-3.5 rounded-2xl outline-none">
-                    </div>
-
-                    <div class="flex items-end">
-                        <button onclick="addEntry()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all shadow-lg active:scale-95 uppercase text-xs tracking-widest">
-                            Confirmar Lançamento
+                    <div class="flex items-end gap-2 lg:col-span-3">
+                        <button id="btn-submit" onclick="addEntry()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all uppercase text-xs tracking-widest">
+                            Salvar Lançamento
+                        </button>
+                        <button id="btn-cancel" onclick="cancelEdit()" class="hidden bg-zinc-800 hover:bg-zinc-700 text-white font-black py-4 px-6 rounded-2xl transition-all uppercase text-xs tracking-widest">
+                            Cancelar
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Lista de Atividades -->
+            <!-- Tabela -->
             <div class="bubble-card p-6 overflow-hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-bold">Fluxo de Caixa</h3>
-                    <select onchange="changeFilterMonth(this.value)" id="month-filter" class="text-xs p-2 rounded-lg bg-zinc-800 border-none outline-none font-bold">
-                        <!-- Gerado via JS -->
-                    </select>
+                <div class="flex justify-between items-center mb-6 px-2">
+                    <h3 class="text-lg font-bold">Histórico do Mês</h3>
+                    <select onchange="changeFilterMonth(this.value)" id="month-filter" class="text-xs p-2 rounded-lg bg-zinc-800 font-bold outline-none border-none"></select>
                 </div>
                 <div class="overflow-x-auto custom-scroll">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="text-zinc-500 text-[10px] uppercase border-b border-zinc-800 font-black tracking-tighter">
-                                <th class="pb-4">Descrição</th>
+                            <tr class="text-zinc-500 text-[10px] uppercase border-b border-zinc-800 font-black">
+                                <th class="pb-4 pl-2">Descrição</th>
                                 <th class="pb-4">Categoria</th>
                                 <th class="pb-4 text-right">Valor</th>
-                                <th class="pb-4"></th>
+                                <th class="pb-4 text-right pr-2">Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="transaction-history" class="text-zinc-300 text-sm">
-                            <!-- JS Inject -->
-                        </tbody>
+                        <tbody id="transaction-history" class="text-zinc-300 text-sm"></tbody>
                     </table>
+                </div>
+                <div id="empty-state" class="py-20 text-center hidden">
+                    <p class="text-zinc-600 font-bold uppercase text-[10px] tracking-widest">Nenhum lançamento encontrado neste mês</p>
                 </div>
             </div>
         </section>
 
-        <!-- Section: Yearly -->
+        <!-- Visão Anual -->
         <section id="section-yearly" class="hidden space-y-8">
             <div class="bubble-card p-8">
-                <h3 class="text-lg font-bold mb-8 text-center">Previsão de Saúde Anual</h3>
+                <h3 class="text-lg font-bold mb-8 text-center">Fluxo de Caixa Anual</h3>
                 <div class="h-80">
                     <canvas id="yearlyChart"></canvas>
                 </div>
             </div>
-            <div id="yearly-summary-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bubble-card p-6">
+                    <h4 class="text-sm font-bold uppercase text-zinc-500 mb-4 tracking-widest">Resumo do Ano</h4>
+                    <div id="yearly-category-summary" class="space-y-4"></div>
+                </div>
+                <div class="bubble-card p-6">
+                    <h4 class="text-sm font-bold uppercase text-zinc-500 mb-4 tracking-widest">Resumo Mensal (Líquido)</h4>
+                    <div id="yearly-summary-list" class="space-y-2 max-h-64 overflow-y-auto custom-scroll pr-2"></div>
+                </div>
+            </div>
         </section>
 
     </main>
 
-    <!-- Notification -->
-    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl shadow-2xl opacity-0 transition-all z-[100] flex items-center gap-4">
-        <div id="toast-icon" class="w-2 h-10 bg-blue-500 rounded-full"></div>
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl shadow-2xl opacity-0 transition-all z-[100] flex items-center gap-4 pointer-events-none">
+        <div id="toast-icon" class="w-1.5 h-8 bg-blue-500 rounded-full"></div>
         <p id="toast-text" class="font-bold text-sm"></p>
     </div>
 
     <script>
-        let transactions = JSON.parse(localStorage.getItem('vinculo_financeiro_data')) || [];
-        let chartInstance = null;
-        let selectedMonth = new Date().getMonth();
-        let selectedYear = new Date().getFullYear();
+        const categories = ["Renda", "Despesa Fixa", "Despesa Variavel", "Investimento", "Poupança"];
         const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        
+        let selectedMonth = new Date().getMonth();
+        let selectedYear = 2026;
+        let chartInstance = null;
+        let transactions = [];
+
+        function initData() {
+            const stored = localStorage.getItem('vinculo_financeiro_v2');
+            if (stored) {
+                transactions = JSON.parse(stored);
+            } else {
+                transactions = []; // Inicia vazio por solicitação do usuário
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
-            initFilter();
+            initData();
+            initMonthFilter();
             updateDisplayDate();
             renderMonthly();
         });
 
-        function initFilter() {
+        function initMonthFilter() {
             const filter = document.getElementById('month-filter');
             months.forEach((m, i) => {
                 const opt = document.createElement('option');
@@ -236,9 +216,8 @@
             });
         }
 
-        function toggleParcelas() {
-            const type = document.getElementById('recurrence-input').value;
-            document.getElementById('parcelas-container').classList.toggle('hidden', type !== 'parcelado');
+        function updateDisplayDate() {
+            document.getElementById('current-date-display').innerText = `${months[selectedMonth]} ${selectedYear}`;
         }
 
         function changeFilterMonth(m) {
@@ -247,104 +226,112 @@
             renderMonthly();
         }
 
-        function updateDisplayDate() {
-            document.getElementById('current-date-display').innerText = `${months[selectedMonth]} ${selectedYear}`;
-        }
-
         function addEntry() {
             const desc = document.getElementById('desc-input').value;
             const val = parseFloat(document.getElementById('value-input').value);
             const type = document.getElementById('type-input').value;
-            const recurrence = document.getElementById('recurrence-input').value;
-            const parcelas = parseInt(document.getElementById('parcelas-input').value) || 1;
+            const editId = document.getElementById('edit-id').value;
 
-            if (!desc || isNaN(val)) return showToast("Preencha os campos!", "error");
+            if (!desc || isNaN(val)) return showToast("Preencha descrição e valor!", "error");
 
-            const baseId = Date.now();
-            
-            if (recurrence === 'unico') {
-                transactions.push({ id: baseId, description: desc, value: val, type: type, month: selectedMonth, year: selectedYear, isRecurrent: false });
-            } else if (recurrence === 'recorrente') {
-                transactions.push({ id: baseId, description: desc, value: val, type: type, month: selectedMonth, year: selectedYear, isRecurrent: true });
-            } else if (recurrence === 'parcelado') {
-                for (let i = 0; i < parcelas; i++) {
-                    let m = (selectedMonth + i) % 12;
-                    let y = selectedYear + Math.floor((selectedMonth + i) / 12);
-                    transactions.push({ 
-                        id: baseId + i, 
-                        groupId: baseId,
-                        description: `${desc} (${i+1}/${parcelas})`, 
-                        value: val / parcelas, 
-                        type: type, 
-                        month: m, 
-                        year: y,
-                        isRecurrent: false 
-                    });
+            if (editId) {
+                const index = transactions.findIndex(t => t.id === editId);
+                if (index !== -1) {
+                    transactions[index] = { ...transactions[index], description: desc, value: val, type: type };
                 }
+                cancelEdit();
+                showToast("Lançamento atualizado!");
+            } else {
+                transactions.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    description: desc,
+                    value: val,
+                    type: type,
+                    month: selectedMonth,
+                    year: selectedYear
+                });
+                showToast("Lançamento adicionado!");
             }
 
-            saveAndRefresh();
+            save();
             clearInputs();
-            showToast("Lançamento Efetuado!", "success");
+            renderMonthly();
         }
 
-        function clearInputs() {
-            document.getElementById('desc-input').value = "";
-            document.getElementById('value-input').value = "";
+        function editTransaction(id) {
+            const t = transactions.find(item => item.id === id);
+            if (!t) return;
+
+            document.getElementById('edit-id').value = t.id;
+            document.getElementById('desc-input').value = t.description;
+            document.getElementById('value-input').value = t.value;
+            document.getElementById('type-input').value = t.type;
+            
+            document.getElementById('form-title').innerText = "Editando Lançamento";
+            document.getElementById('btn-submit').innerText = "Atualizar Dados";
+            document.getElementById('btn-cancel').classList.remove('hidden');
+            document.getElementById('form-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            document.getElementById('edit-id').value = "";
+            document.getElementById('form-title').innerText = "Novo Lançamento";
+            document.getElementById('btn-submit').innerText = "Salvar Lançamento";
+            document.getElementById('btn-cancel').classList.add('hidden');
+            clearInputs();
         }
 
         function deleteTransaction(id) {
             transactions = transactions.filter(t => t.id !== id);
-            saveAndRefresh();
-        }
-
-        function saveAndRefresh() {
-            localStorage.setItem('vinculo_financeiro_data', JSON.stringify(transactions));
+            save();
             renderMonthly();
-            if(!document.getElementById('section-yearly').classList.contains('hidden')) renderYearly();
-        }
-
-        function getMonthlyData(month, year) {
-            let data = transactions.filter(t => t.month === month && t.year === year);
-            const recurrents = transactions.filter(t => t.isRecurrent && (t.year < year || (t.year === year && t.month < month)));
-            recurrents.forEach(rec => {
-                const exists = data.some(d => d.description === rec.description && d.isRecurrent);
-                if (!exists) data.push({...rec, month: month, year: year, projected: true});
-            });
-            return data;
+            showToast("Removido com sucesso", "error");
         }
 
         function renderMonthly() {
-            const data = getMonthlyData(selectedMonth, selectedYear);
+            const data = transactions.filter(t => t.month === selectedMonth && t.year === selectedYear);
             let inc = 0, exp = 0;
             const tbody = document.getElementById('transaction-history');
+            const emptyState = document.getElementById('empty-state');
             tbody.innerHTML = "";
 
+            if (data.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            data.sort((a, b) => b.value - a.value);
+
             data.forEach(t => {
-                const isInc = t.type === 'Renda';
-                if (isInc) inc += t.value; else exp += t.value;
+                const isRenda = t.type === 'Renda';
+                if (isRenda) inc += t.value; else exp += t.value;
 
                 const tr = document.createElement('tr');
-                tr.className = "border-b border-zinc-900/50 hover:bg-zinc-800/20";
+                tr.className = "border-b border-zinc-900/50 hover:bg-zinc-800/20 group";
                 
-                let badgeColor = "bg-zinc-800 text-zinc-500";
-                if(t.type === 'Renda') badgeColor = "bg-emerald-500/10 text-emerald-500";
-                if(t.type === 'Investimento') badgeColor = "bg-blue-500/10 text-blue-500";
-                if(t.type === 'Poupança') badgeColor = "bg-purple-500/10 text-purple-500";
+                let badgeStyle = "bg-zinc-800 text-zinc-500";
+                if(t.type === 'Renda') badgeStyle = "bg-emerald-500/10 text-emerald-500";
+                if(t.type === 'Investimento') badgeStyle = "bg-blue-500/10 text-blue-500";
+                if(t.type === 'Poupança') badgeStyle = "bg-purple-500/10 text-purple-500";
+                if(t.type === 'Despesa Fixa') badgeStyle = "bg-zinc-700/50 text-zinc-300";
 
                 tr.innerHTML = `
-                    <td class="py-5 font-bold text-zinc-100">${t.description} ${t.projected ? '<span class="text-[9px] text-blue-500 font-black ml-1 uppercase">[Fixo]</span>' : ''}</td>
-                    <td class="py-5"><span class="px-2 py-0.5 rounded text-[9px] font-black uppercase ${badgeColor}">${t.type}</span></td>
-                    <td class="py-5 text-right font-mono font-bold ${isInc ? 'text-emerald-400' : 'text-rose-400'}">${isInc ? '+' : '-'} R$ ${t.value.toFixed(2)}</td>
-                    <td class="py-5 text-right"><button onclick="deleteTransaction(${t.id})" class="text-zinc-700 hover:text-rose-500 transition-colors">×</button></td>
+                    <td class="py-4 pl-2 font-bold text-zinc-100">${t.description}</td>
+                    <td class="py-4"><span class="px-2 py-0.5 rounded text-[9px] font-black uppercase ${badgeStyle}">${t.type}</span></td>
+                    <td class="py-4 text-right font-mono font-bold ${isRenda ? 'text-emerald-400' : 'text-rose-400'}">R$ ${t.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td class="py-4 text-right pr-2 space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="editTransaction('${t.id}')" class="text-blue-500 hover:text-blue-300 text-xs font-bold uppercase">Editar</button>
+                        <button onclick="deleteTransaction('${t.id}')" class="text-zinc-600 hover:text-rose-500 text-xs font-bold uppercase">Excluir</button>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('display-income').innerText = `R$ ${inc.toFixed(2)}`;
-            document.getElementById('display-expenses').innerText = `R$ ${exp.toFixed(2)}`;
+            document.getElementById('display-income').innerText = `R$ ${inc.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('display-expenses').innerText = `R$ ${exp.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
             const bal = inc - exp;
-            document.getElementById('display-balance').innerText = `R$ ${bal.toFixed(2)}`;
+            document.getElementById('display-balance').innerText = `R$ ${bal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
             document.getElementById('display-balance').className = `text-3xl font-bold ${bal >= 0 ? 'text-white' : 'text-orange-500'}`;
         }
 
@@ -357,45 +344,90 @@
         }
 
         function renderYearly() {
-            const chartData = months.map((_, i) => {
-                const data = getMonthlyData(i, selectedYear);
-                const inc = data.filter(t => t.type === 'Renda').reduce((s, t) => s + t.value, 0);
-                const exp = data.filter(t => t.type !== 'Renda').reduce((s, t) => s + t.value, 0);
-                return { inc, exp };
+            const annualData = months.map((_, i) => {
+                const monthItems = transactions.filter(t => t.month === i && t.year === selectedYear);
+                const inc = monthItems.filter(t => t.type === 'Renda').reduce((s, t) => s + t.value, 0);
+                const exp = monthItems.filter(t => t.type !== 'Renda').reduce((s, t) => s + t.value, 0);
+                return { inc, exp, bal: inc - exp };
             });
 
+            // Resumo por Categoria
+            const catTotals = {};
+            categories.forEach(c => catTotals[c] = 0);
+            transactions.filter(t => t.year === selectedYear).forEach(t => {
+                catTotals[t.type] += t.value;
+            });
+
+            const catContainer = document.getElementById('yearly-category-summary');
+            catContainer.innerHTML = "";
+            categories.forEach(c => {
+                const totalRenda = catTotals['Renda'] || 1;
+                const perc = (catTotals[c] / totalRenda * 100).toFixed(1);
+                catContainer.innerHTML += `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span class="text-zinc-400">${c}</span>
+                            <span class="text-white">R$ ${catTotals[c].toLocaleString('pt-BR')}</span>
+                        </div>
+                        <div class="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                            <div class="h-full ${c === 'Renda' ? 'bg-emerald-500' : 'bg-blue-500'}" style="width: ${Math.min(perc, 100)}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Lista Mensal
+            const summaryList = document.getElementById('yearly-summary-list');
+            summaryList.innerHTML = "";
+            months.forEach((m, i) => {
+                const b = annualData[i].bal;
+                summaryList.innerHTML += `
+                    <div class="flex justify-between items-center p-3 bg-zinc-900/30 rounded-xl border border-zinc-800/50">
+                        <span class="font-bold text-xs">${m}</span>
+                        <span class="font-mono text-xs ${b >= 0 ? 'text-emerald-500' : 'text-rose-500'}">R$ ${b.toLocaleString('pt-BR')}</span>
+                    </div>
+                `;
+            });
+
+            // Gráfico
             if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(document.getElementById('yearlyChart'), {
-                type: 'line',
+            const ctx = document.getElementById('yearlyChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
                 data: {
                     labels: months.map(m => m.substring(0, 3)),
                     datasets: [
-                        { label: 'Entradas', data: chartData.map(d => d.inc), borderColor: '#10b981', tension: 0.4, fill: true, backgroundColor: 'rgba(16, 185, 129, 0.05)' },
-                        { label: 'Saídas', data: chartData.map(d => d.exp), borderColor: '#f43f5e', tension: 0.4, fill: true, backgroundColor: 'rgba(244, 63, 94, 0.05)' }
+                        { label: 'Entradas', data: annualData.map(d => d.inc), backgroundColor: '#10b981', borderRadius: 4 },
+                        { label: 'Saídas', data: annualData.map(d => d.exp), backgroundColor: '#f43f5e', borderRadius: 4 }
                     ]
                 },
                 options: { 
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { grid: { color: '#1a1a1a' } }, x: { grid: { display: false } } }
+                    scales: { 
+                        y: { grid: { color: '#1a1a1a' }, ticks: { color: '#555', font: { size: 10 } } }, 
+                        x: { grid: { display: false }, ticks: { color: '#555', font: { size: 10 } } } 
+                    },
+                    plugins: { legend: { display: false } }
                 }
-            });
-
-            const summary = document.getElementById('yearly-summary-list');
-            summary.innerHTML = "";
-            months.forEach((m, i) => {
-                const bal = chartData[i].inc - chartData[i].exp;
-                const div = document.createElement('div');
-                div.className = "bubble-card p-4";
-                div.innerHTML = `<div class="flex justify-between items-center"><span class="font-bold text-sm">${m}</span><span class="font-mono text-xs ${bal >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${bal >= 0 ? '+' : ''}${bal.toFixed(2)}</span></div>`;
-                summary.appendChild(div);
             });
         }
 
-        function showToast(msg, type) {
+        function save() { localStorage.setItem('vinculo_financeiro_v2', JSON.stringify(transactions)); }
+        function clearInputs() { 
+            document.getElementById('desc-input').value = ""; 
+            document.getElementById('value-input').value = ""; 
+        }
+        function resetData() { 
+            if(confirm("Deseja realmente apagar todos os lançamentos?")) {
+                localStorage.removeItem('vinculo_financeiro_v2'); 
+                location.reload(); 
+            }
+        }
+
+        function showToast(msg, type = "success") {
             const t = document.getElementById('toast');
             document.getElementById('toast-text').innerText = msg;
-            document.getElementById('toast-icon').className = `w-2 h-10 rounded-full ${type === 'error' ? 'bg-rose-500' : 'bg-blue-500'}`;
+            document.getElementById('toast-icon').className = `w-1.5 h-8 rounded-full ${type === 'error' ? 'bg-rose-500' : 'bg-blue-500'}`;
             t.style.opacity = "1";
             setTimeout(() => t.style.opacity = "0", 3000);
         }
