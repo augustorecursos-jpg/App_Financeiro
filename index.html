@@ -111,36 +111,75 @@
             transform: translateY(-2px);
             filter: brightness(1.1);
         }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body class="pb-24">
 
-    <!-- TELA DE LOGIN (MOSTRADA POR PADRÃO) -->
+    <!-- TELA DE LOGIN / CADASTRO -->
     <section id="auth-screen" class="min-h-screen flex items-center justify-center p-6">
-        <div class="bubble-card w-full max-w-md p-10 space-y-8 animate-section">
-            <div class="text-center space-y-3">
+        <div class="bubble-card w-full max-w-md p-10 space-y-6 animate-section">
+            <div class="text-center space-y-3 mb-6">
                 <div class="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center shadow-2xl shadow-indigo-900/50 mb-4">
                     <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                     </svg>
                 </div>
-                <h1 class="text-2xl font-black text-white uppercase tracking-tighter">Vértice</h1>
-                <p class="text-zinc-500 text-sm">Entre para cuidar das suas contas</p>
+                <h1 id="auth-title" class="text-2xl font-black text-white uppercase tracking-tighter">Vértice</h1>
+                <p id="auth-subtitle" class="text-zinc-500 text-sm">Acesse sua conta para continuar</p>
             </div>
 
+            <!-- Campos de Cadastro (Ocultos por padrão) -->
+            <div id="register-fields" class="hidden space-y-4">
+                <div class="flex justify-center mb-6">
+                    <div class="relative w-24 h-24 rounded-full border-2 border-dashed border-zinc-700 hover:border-indigo-500 transition-colors flex items-center justify-center cursor-pointer group overflow-hidden" onclick="document.getElementById('reg-photo').click()">
+                        <img id="preview-photo" class="absolute inset-0 w-full h-full object-cover hidden">
+                        <div id="upload-placeholder" class="text-center">
+                            <svg class="w-6 h-6 text-zinc-500 mx-auto mb-1 group-hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="text-[9px] font-bold uppercase text-zinc-500 group-hover:text-white">Foto</span>
+                        </div>
+                        <input type="file" id="reg-photo" class="hidden" accept="image/*" onchange="handlePhoto(event)">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-zinc-500 ml-2 mb-1 block">Nome Completo</label>
+                    <input type="text" id="reg-name" class="w-full p-4 rounded-2xl text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-zinc-500 ml-2 mb-1 block">CPF</label>
+                        <input type="text" id="reg-cpf" placeholder="000.000.000-00" class="w-full p-4 rounded-2xl text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-zinc-500 ml-2 mb-1 block">Telefone</label>
+                        <input type="text" id="reg-phone" placeholder="(00) 00000-0000" class="w-full p-4 rounded-2xl text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campos Comuns (Login/Cadastro) -->
             <div class="space-y-4">
                 <div>
-                    <label class="text-[10px] font-black uppercase text-zinc-500 ml-2 mb-2 block">Seu E-mail</label>
-                    <input type="email" id="login-email" placeholder="nome@email.com" class="w-full p-4 rounded-2xl text-sm">
+                    <label class="text-[10px] font-black uppercase text-zinc-500 ml-2 mb-1 block">Seu E-mail</label>
+                    <input type="email" id="auth-email" placeholder="nome@email.com" class="w-full p-4 rounded-2xl text-sm">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black uppercase text-zinc-500 ml-2 mb-2 block">Sua Senha</label>
-                    <input type="password" id="login-pass" placeholder="••••••••" class="w-full p-4 rounded-2xl text-sm">
+                    <label class="text-[10px] font-black uppercase text-zinc-500 ml-2 mb-1 block">Sua Senha</label>
+                    <input type="password" id="auth-pass" placeholder="••••••••" class="w-full p-4 rounded-2xl text-sm">
                 </div>
-                <button onclick="handleLogin()" class="btn-primary w-full py-4 text-white font-bold rounded-2xl text-sm uppercase tracking-widest mt-4">Acessar Conta</button>
+                
+                <button id="auth-btn" onclick="processAuth()" class="btn-primary w-full py-4 text-white font-bold rounded-2xl text-sm uppercase tracking-widest mt-6">
+                    Acessar Conta
+                </button>
             </div>
             
-            <p class="text-center text-[10px] text-zinc-600 uppercase font-bold">Segurança Vértice &copy; 2027</p>
+            <div class="text-center pt-2">
+                <p class="text-xs text-zinc-500">
+                    <span id="toggle-msg">Não tem conta?</span>
+                    <button onclick="toggleAuthMode()" class="text-indigo-400 font-bold ml-1 hover:text-white transition-colors uppercase text-[10px] tracking-widest" id="toggle-btn">Criar agora</button>
+                </p>
+            </div>
         </div>
     </section>
 
@@ -150,8 +189,9 @@
         <header class="p-6 bg-black/50 backdrop-blur-2xl sticky top-0 z-50 border-b border-white/5">
             <div class="max-w-6xl mx-auto flex justify-between items-center">
                 <div class="flex items-center gap-4">
-                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center overflow-hidden">
+                        <img id="user-avatar" class="w-full h-full object-cover hidden" src="">
+                        <svg id="default-avatar" class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                         </svg>
                     </div>
@@ -291,30 +331,104 @@
     </div>
 
     <script>
-        // Lógica de Autenticação
-        function handleLogin() {
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-pass').value;
+        let isLoginMode = true;
+        let tempPhoto = null;
 
-            if (email && pass) {
-                // Simulação de login
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('main-content').classList.remove('hidden');
-                
-                // Se for você (Master)
-                if (email.includes('master')) {
-                    document.getElementById('user-badge').innerText = "Modo Administrador (Master)";
-                    document.getElementById('user-badge').classList.replace('text-indigo-400', 'text-amber-400');
-                }
+        // Alternância Login / Cadastro
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            const regFields = document.getElementById('register-fields');
+            const title = document.getElementById('auth-title');
+            const sub = document.getElementById('auth-subtitle');
+            const btn = document.getElementById('auth-btn');
+            const toggleMsg = document.getElementById('toggle-msg');
+            const toggleBtn = document.getElementById('toggle-btn');
+
+            if(isLoginMode) {
+                regFields.classList.add('hidden');
+                title.innerText = 'Vértice';
+                sub.innerText = 'Acesse sua conta para continuar';
+                btn.innerText = 'Acessar Conta';
+                toggleMsg.innerText = 'Não tem conta?';
+                toggleBtn.innerText = 'Criar agora';
             } else {
-                alert("Por favor, preencha o e-mail e a senha.");
+                regFields.classList.remove('hidden');
+                title.innerText = 'Nova Conta';
+                sub.innerText = 'Preencha seus dados para começar';
+                btn.innerText = 'Cadastrar';
+                toggleMsg.innerText = 'Já tem conta?';
+                toggleBtn.innerText = 'Fazer login';
+            }
+        }
+
+        // Preview de Foto
+        function handlePhoto(event) {
+            const file = event.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempPhoto = e.target.result;
+                    const preview = document.getElementById('preview-photo');
+                    preview.src = tempPhoto;
+                    preview.classList.remove('hidden');
+                    document.getElementById('upload-placeholder').classList.add('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Processo de Autenticação
+        function processAuth() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+
+            if(!email || !pass) {
+                alert("Por favor, preencha e-mail e senha.");
+                return;
+            }
+
+            if(!isLoginMode) {
+                // Modo Cadastro
+                const name = document.getElementById('reg-name').value;
+                const cpf = document.getElementById('reg-cpf').value;
+                if(!name || !cpf) {
+                    alert("Preencha nome e CPF para cadastrar.");
+                    return;
+                }
+                // Salvar dados simulados
+                localStorage.setItem('user_name', name);
+                localStorage.setItem('user_photo', tempPhoto || '');
+                alert("Cadastro realizado com sucesso!");
+            }
+
+            // Login (Simulado)
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            
+            // Carregar dados do usuário
+            const savedName = localStorage.getItem('user_name') || "Usuário";
+            const savedPhoto = localStorage.getItem('user_photo');
+            
+            if(savedPhoto) {
+                const avatar = document.getElementById('user-avatar');
+                avatar.src = savedPhoto;
+                avatar.classList.remove('hidden');
+                document.getElementById('default-avatar').classList.add('hidden');
+            }
+
+            // Verifica se é Master
+            if (email.toLowerCase().includes('master')) {
+                const badge = document.getElementById('user-badge');
+                badge.innerText = "Modo Administrador (Master)";
+                badge.classList.remove('text-indigo-400');
+                badge.classList.add('text-amber-400');
             }
         }
 
         function handleLogout() {
             document.getElementById('auth-screen').classList.remove('hidden');
             document.getElementById('main-content').classList.add('hidden');
-            document.getElementById('login-pass').value = "";
+            document.getElementById('auth-pass').value = "";
         }
 
         // Navegação de Abas
