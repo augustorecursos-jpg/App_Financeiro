@@ -51,7 +51,6 @@
             color: white !important;
             border-radius: 16px !important;
             transition: all 0.3s ease;
-            appearance: none;
         }
 
         /* Estilização das opções do Select para manter o tema escuro */
@@ -136,11 +135,19 @@
 
         .category-row { cursor: pointer; }
         .category-row:hover td { background: rgba(255, 255, 255, 0.04); }
+
+        /* Mensagem de erro customizada */
+        #auth-msg {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body class="pb-24">
 
-    <!-- TELA DE AUTH (LOGIN / CADASTRO) -->
+    <!-- TELA DE AUTH -->
     <section id="auth-screen" class="min-h-screen flex items-center justify-center p-6">
         <div class="bubble-card w-full max-w-md p-10 space-y-6 animate-section text-center">
             <div class="w-20 h-20 mx-auto rounded-[2rem] bg-indigo-600 flex items-center justify-center shadow-2xl mb-6 ring-4 ring-indigo-600/20">
@@ -150,14 +157,16 @@
             <p id="auth-subtitle" class="text-zinc-500 text-sm font-medium italic">Gestão Financeira de Alto Padrão</p>
 
             <div class="space-y-4 pt-4 text-left">
+                <div id="auth-msg" class="hidden mb-2 text-rose-400 text-center"></div>
+                
                 <input type="email" id="auth-email" placeholder="E-mail profissional" class="w-full p-4 text-sm">
                 <input type="password" id="auth-pass" placeholder="Senha de acesso" class="w-full p-4 text-sm">
                 
-                <button id="auth-main-btn" onclick="handleAuth()" class="btn-primary w-full py-4 text-white font-bold rounded-2xl text-xs uppercase tracking-widest mt-4">Login</button>
+                <button id="auth-main-btn" onclick="handleAuth()" class="btn-primary w-full py-4 text-white font-bold rounded-2xl text-xs uppercase tracking-widest mt-4">Continuar</button>
                 
                 <div class="text-center pt-4 flex flex-col gap-3">
-                    <button id="auth-toggle-btn" onclick="toggleAuthMode()" class="text-[10px] text-zinc-500 hover:text-indigo-400 font-bold uppercase tracking-widest transition-colors">
-                        Não tem conta? Cadastre-se
+                    <button id="auth-toggle-btn" onclick="resetAuthFlow()" class="text-[10px] text-zinc-500 hover:text-indigo-400 font-bold uppercase tracking-widest transition-colors">
+                        Limpar campos
                     </button>
                 </div>
             </div>
@@ -178,23 +187,13 @@
                     </div>
                 </div>
 
-                <!-- SELETOR DE DATA ATUAL (VISÃO) -->
                 <div class="flex items-center bg-white/5 px-4 py-2 rounded-2xl border border-white/10 gap-3">
-                    <select id="select-month" onchange="updateDateContext()" class="!bg-transparent !border-none text-[11px] font-bold uppercase cursor-pointer">
-                        <option value="0">Janeiro</option>
-                        <option value="1">Fevereiro</option>
-                        <option value="2">Março</option>
-                        <option value="3">Abril</option>
-                        <option value="4">Maio</option>
-                        <option value="5">Junho</option>
-                        <option value="6">Julho</option>
-                        <option value="7">Agosto</option>
-                        <option value="8">Setembro</option>
-                        <option value="9">Outubro</option>
-                        <option value="10">Novembro</option>
-                        <option value="11">Dezembro</option>
+                    <select id="select-month" onchange="updateDateContext()" class="!bg-transparent !border-none text-[11px] font-bold uppercase cursor-pointer outline-none">
+                        <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option>
+                        <option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option>
+                        <option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
                     </select>
-                    <input type="number" id="select-year" onchange="updateDateContext()" value="2026" class="!bg-transparent !border-none w-16 text-[11px] font-bold">
+                    <input type="number" id="select-year" onchange="updateDateContext()" value="2026" class="!bg-transparent !border-none w-16 text-[11px] font-bold outline-none">
                 </div>
 
                 <nav class="flex gap-4">
@@ -210,7 +209,6 @@
         <main class="max-w-7xl mx-auto p-6 md:p-10">
             <!-- ABA MENSAL -->
             <section id="section-monthly" class="space-y-10 animate-section">
-                <!-- CARDS DE RESUMO -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div class="bubble-card p-6 border-l-4 border-l-emerald-500">
                         <p class="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Total Recebido</p>
@@ -234,7 +232,6 @@
                     </div>
                 </div>
 
-                <!-- FORMULÁRIO DE INPUT -->
                 <div class="bubble-card p-8">
                     <div class="flex justify-between items-center mb-8">
                         <h3 id="form-title" class="text-[10px] font-black uppercase text-indigo-400 tracking-[0.2em]">Novo Registro Financeiro</h3>
@@ -254,15 +251,15 @@
                             <input type="number" id="val-input" placeholder="0,00" class="w-full p-4 text-sm">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Lançar para Mês</label>
+                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Mês</label>
                             <select id="input-month" class="w-full p-4 text-sm">
-                                <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option>
-                                <option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option>
-                                <option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+                                <option value="0">Jan</option><option value="1">Fev</option><option value="2">Mar</option><option value="3">Abr</option>
+                                <option value="4">Mai</option><option value="5">Jun</option><option value="6">Jul</option><option value="7">Ago</option>
+                                <option value="8">Set</option><option value="9">Out</option><option value="10">Nov</option><option value="11">Dez</option>
                             </select>
                         </div>
                         <div class="md:col-span-2">
-                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Lançar para Ano</label>
+                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Ano</label>
                             <input type="number" id="input-year" value="2026" class="w-full p-4 text-sm">
                         </div>
                         <div class="md:col-span-3">
@@ -280,9 +277,9 @@
                             <div>
                                 <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Recorrência</label>
                                 <select id="recurrence-input" onchange="toggleParcelField()" class="w-full p-4 text-sm">
-                                    <option value="once">Apenas o mês selecionado</option>
-                                    <option value="monthly">Repetir Mensalmente</option>
-                                    <option value="installment">Parcelamento</option>
+                                    <option value="once">Apenas este mês</option>
+                                    <option value="monthly">Mensal</option>
+                                    <option value="installment">Parcelado</option>
                                 </select>
                             </div>
                             <div id="parcel-container" class="hidden animate-section">
@@ -292,28 +289,26 @@
                         </div>
 
                         <div class="md:col-span-12 flex justify-end gap-3 pt-4">
-                            <button id="cancel-edit-btn" onclick="resetForm()" class="hidden px-8 py-4 text-zinc-400 font-bold rounded-2xl text-[10px] uppercase tracking-widest">Cancelar Edição</button>
+                            <button id="cancel-edit-btn" onclick="resetForm()" class="hidden px-8 py-4 text-zinc-400 font-bold rounded-2xl text-[10px] uppercase tracking-widest">Cancelar</button>
                             <button id="confirm-btn" onclick="addEntry()" class="btn-primary px-12 py-4 text-white font-bold rounded-2xl text-[10px] uppercase tracking-widest">Confirmar Lançamento</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- LISTAGEM -->
                 <div id="monthly-list" class="space-y-4"></div>
             </section>
 
-            <!-- ABA ANUAL EXPANSÍVEL -->
+            <!-- ABA ANUAL -->
             <section id="section-yearly" class="hidden space-y-8 animate-section">
                 <div class="bubble-card p-10">
                     <div class="flex justify-between items-center mb-10">
                         <h3 class="text-[11px] font-black uppercase text-indigo-400 tracking-[0.2em]">Análise Consolidada <span id="yearly-year-title">2026</span></h3>
-                        <p class="text-[10px] text-zinc-500 font-bold italic">Clique na categoria para expandir o detalhamento</p>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="yearly-table">
                             <thead>
                                 <tr>
-                                    <th class="min-w-[200px]">Fluxo / Categoria</th>
+                                    <th class="min-w-[180px]">Fluxo / Categoria</th>
                                     <th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th>
                                     <th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
                                     <th class="text-white">Total</th>
@@ -328,12 +323,12 @@
     </div>
 
     <script>
+        // --- ESTADO GLOBAL ---
         let currentUser = null;
         let transactions = [];
-        let isRegisterMode = false;
+        let authState = "EMAIL_CHECK"; // EMAIL_CHECK, LOGIN, REGISTER
         let editingId = null;
         let expandedCategories = new Set();
-
         let selectedMonth = new Date().getMonth();
         let selectedYear = new Date().getFullYear();
 
@@ -344,28 +339,68 @@
             document.getElementById('input-year').value = selectedYear;
         };
 
-        function toggleAuthMode() {
-            isRegisterMode = !isRegisterMode;
-            document.getElementById('auth-main-btn').innerText = isRegisterMode ? "Criar Minha Conta" : "Login";
-            document.getElementById('auth-toggle-btn').innerText = isRegisterMode ? "Já tem conta? Faça Login" : "Não tem conta? Cadastre-se";
-        }
-
+        // --- LÓGICA DE AUTENTICAÇÃO ---
         function handleAuth() {
-            const email = document.getElementById('auth-email').value;
-            const pass = document.getElementById('auth-pass').value;
-            if (!email || !pass) return;
+            const emailInput = document.getElementById('auth-email');
+            const passInput = document.getElementById('auth-pass');
+            const msgEl = document.getElementById('auth-msg');
+            const btnEl = document.getElementById('auth-main-btn');
+
+            const email = emailInput.value.trim();
+            const pass = passInput.value;
+
+            if (!email) {
+                showAuthMsg("Informe seu e-mail");
+                return;
+            }
 
             const users = JSON.parse(localStorage.getItem('vertice_users') || '{}');
-            if (isRegisterMode) {
-                if (users[email]) return;
+
+            if (authState === "EMAIL_CHECK") {
+                if (users[email]) {
+                    // Usuário existe, pedir senha
+                    authState = "LOGIN";
+                    btnEl.innerText = "Entrar";
+                    showAuthMsg("Bem-vindo de volta! Informe sua senha", "text-indigo-400");
+                } else {
+                    // Usuário não existe, ir para registro
+                    authState = "REGISTER";
+                    btnEl.innerText = "Criar Conta";
+                    showAuthMsg("E-mail não cadastrado. Defina uma senha para começar", "text-emerald-400");
+                }
+                return;
+            }
+
+            if (authState === "LOGIN") {
+                if (users[email].pass === pass) {
+                    processLogin(email);
+                } else {
+                    showAuthMsg("Senha incorreta");
+                }
+            } else if (authState === "REGISTER") {
+                if (!pass || pass.length < 4) {
+                    showAuthMsg("Defina uma senha válida (mín. 4 caracteres)");
+                    return;
+                }
                 users[email] = { pass };
                 localStorage.setItem('vertice_users', JSON.stringify(users));
-                toggleAuthMode();
-            } else {
-                if (users[email] && users[email].pass === pass) {
-                    processLogin(email);
-                }
+                processLogin(email);
             }
+        }
+
+        function showAuthMsg(text, colorClass = "text-rose-400") {
+            const el = document.getElementById('auth-msg');
+            el.innerText = text;
+            el.className = `mb-2 text-center font-bold text-[10px] uppercase tracking-wider ${colorClass}`;
+            el.classList.remove('hidden');
+        }
+
+        function resetAuthFlow() {
+            authState = "EMAIL_CHECK";
+            document.getElementById('auth-email').value = "";
+            document.getElementById('auth-pass').value = "";
+            document.getElementById('auth-main-btn').innerText = "Continuar";
+            document.getElementById('auth-msg').classList.add('hidden');
         }
 
         function processLogin(email) {
@@ -379,6 +414,7 @@
 
         function logout() { location.reload(); }
 
+        // --- LÓGICA DO APP ---
         function updateDateContext() {
             selectedMonth = parseInt(document.getElementById('select-month').value);
             selectedYear = parseInt(document.getElementById('select-year').value);
@@ -400,18 +436,18 @@
         }
 
         function loadData() {
-            const data = localStorage.getItem(`vertice_stable_${currentUser.email}`);
+            const data = localStorage.getItem(`vertice_db_${currentUser.email}`);
             transactions = data ? JSON.parse(data) : [];
         }
 
         function saveData() {
-            localStorage.setItem(`vertice_stable_${currentUser.email}`, JSON.stringify(transactions));
+            localStorage.setItem(`vertice_db_${currentUser.email}`, JSON.stringify(transactions));
             renderMonthly();
             if(!document.getElementById('section-yearly').classList.contains('hidden')) renderYearly();
         }
 
         function clearAllData() {
-            if(confirm("Deseja realmente apagar TODOS os registros? Esta ação não pode ser desfeita.")) {
+            if(confirm("Deseja realmente apagar TODOS os seus lançamentos?")) {
                 transactions = [];
                 saveData();
             }
@@ -439,7 +475,7 @@
                     transactions.push({ id: timestamp, desc, val, category, paid: false, month: inMonth, year: inYear });
                 } else if (recurrence === 'monthly') {
                     for (let m = inMonth; m < 12; m++) {
-                        transactions.push({ id: timestamp + m, desc: `${desc}`, val, category, paid: false, month: m, year: inYear });
+                        transactions.push({ id: timestamp + m, desc, val, category, paid: false, month: m, year: inYear });
                     }
                 } else if (recurrence === 'installment') {
                     const numParcels = parseInt(document.getElementById('parcel-input').value);
@@ -457,34 +493,25 @@
         function editItem(id) {
             const item = transactions.find(t => t.id === id);
             if (!item) return;
-
             editingId = id;
             document.getElementById('desc-input').value = item.desc;
             document.getElementById('val-input').value = item.val;
             document.getElementById('category-input').value = item.category;
             document.getElementById('input-month').value = item.month;
             document.getElementById('input-year').value = item.year;
-            
             document.getElementById('form-title').innerText = "Editando Registro";
-            document.getElementById('confirm-btn').innerText = "Salvar Alterações";
+            document.getElementById('confirm-btn').innerText = "Salvar";
             document.getElementById('cancel-edit-btn').classList.remove('hidden');
-            document.getElementById('recurrence-input').disabled = true;
-            
-            window.scrollTo({ top: 300, behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function resetForm() {
             editingId = null;
             document.getElementById('desc-input').value = '';
             document.getElementById('val-input').value = '';
-            document.getElementById('input-month').value = selectedMonth;
-            document.getElementById('input-year').value = selectedYear;
             document.getElementById('form-title').innerText = "Novo Registro Financeiro";
             document.getElementById('confirm-btn').innerText = "Confirmar Lançamento";
             document.getElementById('cancel-edit-btn').classList.add('hidden');
-            document.getElementById('recurrence-input').disabled = false;
-            document.getElementById('recurrence-input').value = 'once';
-            toggleParcelField();
         }
 
         function togglePaid(id) {
@@ -505,9 +532,8 @@
             let income = 0, totalToPay = 0, paid = 0, pending = 0;
 
             filtered.forEach(t => {
-                if(t.category === 'Renda') {
-                    income += t.val;
-                } else {
+                if(t.category === 'Renda') { income += t.val; } 
+                else {
                     totalToPay += t.val;
                     if(t.paid) paid += t.val; else pending += t.val;
                 }
@@ -526,11 +552,11 @@
                     </div>
                     <div class="flex items-center gap-4">
                         <span class="text-sm font-extrabold ${t.category === 'Renda' ? 'text-emerald-400' : 'text-white'}">R$ ${t.val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
-                        <div class="flex gap-1">
-                            <button onclick="editItem(${t.id})" title="Editar" class="text-zinc-600 hover:text-indigo-400 transition-colors p-2">
+                        <div class="flex gap-2">
+                             <button onclick="editItem(${t.id})" class="text-zinc-500 hover:text-indigo-400 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                             </button>
-                            <button onclick="deleteItem(${t.id})" title="Deletar" class="text-zinc-600 hover:text-rose-500 transition-colors p-2">
+                            <button onclick="deleteItem(${t.id})" class="text-zinc-500 hover:text-rose-400 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                             </button>
                         </div>
@@ -540,17 +566,15 @@
             });
 
             const balance = income - totalToPay;
-            const balanceEl = document.getElementById('display-balance');
-            const balanceCard = document.getElementById('card-balance');
-
             document.getElementById('display-income').innerText = `R$ ${income.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
             document.getElementById('display-total').innerText = `R$ ${totalToPay.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
             document.getElementById('display-paid').innerText = `R$ ${paid.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
             document.getElementById('display-pending').innerText = `R$ ${pending.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('display-balance').innerText = `R$ ${balance.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
             
-            balanceEl.innerText = `R$ ${balance.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            balanceCard.style.borderLeftColor = balance >= 0 ? '#10b981' : '#f43f5e';
-            balanceEl.className = `text-2xl font-bold ${balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+            const balCard = document.getElementById('card-balance');
+            balCard.style.borderLeftColor = balance >= 0 ? '#10b981' : '#f43f5e';
+            document.getElementById('display-balance').className = `text-2xl font-bold ${balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
         }
 
         function toggleCategoryExpand(cat) {
@@ -566,10 +590,11 @@
             const categories = ["Renda", "Despesa Fixa", "Despesa Variável", "Investimento", "Poupança"];
 
             categories.forEach(cat => {
-                let row = `<tr class="category-row" onclick="toggleCategoryExpand('${cat}')"><td class="text-[11px] font-black text-white uppercase tracking-wider flex items-center gap-2">
-                    <svg class="w-3 h-3 transition-transform ${expandedCategories.has(cat) ? 'rotate-90' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
-                    ${cat}
-                </td>`;
+                let row = `<tr class="category-row" onclick="toggleCategoryExpand('${cat}')">
+                    <td class="text-[11px] font-black text-white uppercase tracking-wider flex items-center gap-2">
+                        <svg class="w-3 h-3 transition-transform ${expandedCategories.has(cat) ? 'rotate-90' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+                        ${cat}
+                    </td>`;
                 let totalCat = 0;
                 for(let i=0; i<12; i++) {
                     const val = transactions
@@ -582,19 +607,17 @@
                 body.innerHTML += row;
 
                 if (expandedCategories.has(cat)) {
-                    const uniqueItemNames = [...new Set(transactions.filter(t => t.category === cat && t.year === selectedYear).map(t => t.desc))];
-                    uniqueItemNames.forEach(name => {
-                        let detailRow = `<tr class="detail-row"><td class="pl-10 italic">${name}</td>`;
+                    const items = [...new Set(transactions.filter(t => t.category === cat && t.year === selectedYear).map(t => t.desc))];
+                    items.forEach(name => {
+                        let dRow = `<tr class="detail-row"><td class="pl-10 italic">${name}</td>`;
                         let totalItem = 0;
                         for(let i=0; i<12; i++) {
-                            const val = transactions
-                                .filter(t => t.category === cat && t.desc === name && t.month === i && t.year === selectedYear)
-                                .reduce((acc, curr) => acc + curr.val, 0);
+                            const val = transactions.filter(t => t.category === cat && t.desc === name && t.month === i && t.year === selectedYear).reduce((acc, curr) => acc + curr.val, 0);
                             totalItem += val;
-                            detailRow += `<td>${val > 0 ? 'R$ ' + val.toLocaleString('pt-BR', {minimumFractionDigits: 0}) : '-'}</td>`;
+                            dRow += `<td>${val > 0 ? 'R$ '+val.toLocaleString('pt-BR', {minimumFractionDigits:0}) : '-'}</td>`;
                         }
-                        detailRow += `<td class="font-bold">R$ ${totalItem.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td></tr>`;
-                        body.innerHTML += detailRow;
+                        dRow += `<td class="font-bold">R$ ${totalItem.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td></tr>`;
+                        body.innerHTML += dRow;
                     });
                 }
             });
