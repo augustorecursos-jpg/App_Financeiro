@@ -72,6 +72,12 @@
             transition: all 0.3s ease;
         }
 
+        input:focus {
+            outline: none;
+            border-color: var(--accent) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+        }
+
         .table-container::-webkit-scrollbar { height: 6px; }
         .table-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
 
@@ -84,13 +90,11 @@
             border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* Estilo para Linhas Expansíveis */
         .category-row { cursor: pointer; transition: background 0.2s; }
         .category-row:hover { background: rgba(255, 255, 255, 0.05); }
         .child-row { background: rgba(255, 255, 255, 0.02); display: none; }
         .child-row.active { display: table-row; }
         
-        /* Sistema de Pago / Não Pago */
         .is-paid { opacity: 0.35; filter: grayscale(0.8); }
         .is-paid .text-amount { text-decoration: line-through; }
         .is-paid .status-indicator { background-color: #10b981 !important; box-shadow: none !important; }
@@ -103,181 +107,217 @@
             box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
             transition: all 0.3s ease;
         }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
     </style>
 </head>
 <body class="pb-24">
 
-    <!-- CABEÇALHO -->
-    <header class="p-6 bg-black/50 backdrop-blur-2xl sticky top-0 z-50 border-b border-white/5">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center shadow-lg shadow-indigo-900/40">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- TELA DE LOGIN (MOSTRADA POR PADRÃO) -->
+    <section id="auth-screen" class="min-h-screen flex items-center justify-center p-6">
+        <div class="bubble-card w-full max-w-md p-10 space-y-8 animate-section">
+            <div class="text-center space-y-3">
+                <div class="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center shadow-2xl shadow-indigo-900/50 mb-4">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                     </svg>
                 </div>
+                <h1 class="text-2xl font-black text-white uppercase tracking-tighter">Vértice</h1>
+                <p class="text-zinc-500 text-sm">Entre para cuidar das suas contas</p>
+            </div>
+
+            <div class="space-y-4">
                 <div>
-                    <h1 class="text-base font-extrabold text-white leading-tight uppercase tracking-tighter">Vértice</h1>
-                    <span class="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Controlo de Contas</span>
+                    <label class="text-[10px] font-black uppercase text-zinc-500 ml-2 mb-2 block">Seu E-mail</label>
+                    <input type="email" id="login-email" placeholder="nome@email.com" class="w-full p-4 rounded-2xl text-sm">
                 </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-zinc-500 ml-2 mb-2 block">Sua Senha</label>
+                    <input type="password" id="login-pass" placeholder="••••••••" class="w-full p-4 rounded-2xl text-sm">
+                </div>
+                <button onclick="handleLogin()" class="btn-primary w-full py-4 text-white font-bold rounded-2xl text-sm uppercase tracking-widest mt-4">Acessar Conta</button>
             </div>
             
-            <nav class="flex gap-2">
-                <button onclick="switchTab('monthly')" id="tab-monthly" class="tab-btn active">Minhas Contas</button>
-                <button onclick="switchTab('yearly')" id="tab-yearly" class="tab-btn">Plano do Ano</button>
-            </nav>
+            <p class="text-center text-[10px] text-zinc-600 uppercase font-bold">Segurança Vértice &copy; 2027</p>
         </div>
-    </header>
+    </section>
 
-    <main class="max-w-6xl mx-auto p-4 md:p-8">
-
-        <!-- ABA DE LANÇAMENTOS -->
-        <section id="section-monthly" class="space-y-8 animate-section">
-            <!-- Cards de Resumo com Linguagem Simples -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bubble-card p-7 border-l-4 border-l-indigo-500">
-                    <p class="text-[11px] font-black text-zinc-500 uppercase mb-2">Total de contas</p>
-                    <h2 class="text-3xl font-bold">R$ 5.730,00</h2>
-                </div>
-                <div class="bubble-card p-7 border-l-4 border-l-emerald-500">
-                    <p class="text-[11px] font-black text-zinc-500 uppercase mb-2">O que já paguei</p>
-                    <h2 class="text-3xl font-bold text-emerald-400">R$ 3.864,00</h2>
-                </div>
-                <div class="bubble-card p-7 border-l-4 border-l-rose-500">
-                    <p class="text-[11px] font-black text-zinc-500 uppercase mb-2">Falta pagar</p>
-                    <h2 class="text-3xl font-bold text-rose-400">R$ 1.866,00</h2>
-                </div>
-            </div>
-
-            <!-- Formulário -->
-            <div class="bubble-card p-8">
-                <h3 class="text-[11px] font-black uppercase text-zinc-400 mb-6 tracking-widest">Anotar nova conta</h3>
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                    <div class="md:col-span-4"><input type="text" placeholder="O que é? (Ex: Aluguer, Luz...)" class="w-full p-4 rounded-2xl text-sm"></div>
-                    <div class="md:col-span-2"><input type="number" placeholder="Quanto? R$" class="w-full p-4 rounded-2xl text-sm"></div>
-                    <div class="md:col-span-2">
-                        <select class="w-full p-4 rounded-2xl text-sm appearance-none">
-                            <option>Janeiro</option><option>Fevereiro</option><option>Março</option>
-                            <option>Abril</option><option>Maio</option><option>Junho</option>
-                            <option>Julho</option><option>Agosto</option><option>Setembro</option>
-                            <option>Outubro</option><option>Novembro</option><option>Dezembro</option>
-                        </select>
+    <!-- CONTEÚDO PRINCIPAL (ESCONDIDO ATÉ O LOGIN) -->
+    <div id="main-content" class="hidden">
+        <!-- CABEÇALHO -->
+        <header class="p-6 bg-black/50 backdrop-blur-2xl sticky top-0 z-50 border-b border-white/5">
+            <div class="max-w-6xl mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
                     </div>
-                    <div class="md:col-span-2">
-                        <select class="w-full p-4 rounded-2xl text-sm appearance-none">
-                            <option>2025</option><option>2026</option><option selected>2027</option>
-                        </select>
+                    <div>
+                        <h1 class="text-base font-extrabold text-white leading-tight uppercase tracking-tighter">Vértice</h1>
+                        <span id="user-badge" class="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Painel do Usuário</span>
                     </div>
-                    <div class="md:col-span-2"><button class="btn-primary w-full text-white font-bold rounded-2xl h-full text-xs uppercase">Anotar</button></div>
-                </div>
-            </div>
-
-            <!-- Lista de Contas com opção de Marcar Pago -->
-            <div class="bubble-card p-8">
-                <h3 class="text-[11px] font-black uppercase text-zinc-400 mb-4 tracking-widest">Contas deste mês</h3>
-                <div id="monthly-list" class="space-y-4">
-                    <!-- Item com clique para pagar -->
-                    <div onclick="togglePaid('item-servidores')" class="flex items-center justify-between p-5 bg-white/[0.03] rounded-3xl border border-white/5 cursor-pointer hover:bg-white/[0.05] transition-all group" id="item-servidores">
-                        <div class="flex items-center gap-4">
-                            <div class="status-indicator w-3 h-3 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all"></div>
-                            <div>
-                                <p class="text-sm font-bold group-hover:text-indigo-300 transition-colors">Internet e Cloud</p>
-                                <p class="text-[10px] text-zinc-500">Tocar para marcar como pago</p>
-                            </div>
-                        </div>
-                        <span class="text-sm font-bold text-amount">R$ 2.164,00</span>
-                    </div>
-
-                    <div onclick="togglePaid('item-equipa')" class="flex items-center justify-between p-5 bg-white/[0.03] rounded-3xl border border-white/5 cursor-pointer hover:bg-white/[0.05] transition-all group" id="item-equipa">
-                        <div class="flex items-center gap-4">
-                            <div class="status-indicator w-3 h-3 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all"></div>
-                            <div>
-                                <p class="text-sm font-bold group-hover:text-indigo-300 transition-colors">Equipa Core</p>
-                                <p class="text-[10px] text-zinc-500">Tocar para marcar como pago</p>
-                            </div>
-                        </div>
-                        <span class="text-sm font-bold text-amount">R$ 3.566,00</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ABA VISÃO ANUAL (EXPANSÍVEL) -->
-        <section id="section-yearly" class="hidden space-y-8 animate-section">
-            <div class="bubble-card p-6 overflow-hidden">
-                <div class="mb-4 px-4">
-                    <h3 class="text-lg font-bold">Resumo de todo o ano</h3>
-                    <p class="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Toque no nome para ver os detalhes de cada mês</p>
                 </div>
                 
-                <div class="table-container overflow-x-auto">
-                    <table class="w-full text-center border-separate border-spacing-y-1">
-                        <thead>
-                            <tr class="text-zinc-500 font-black uppercase text-[9px] tracking-widest">
-                                <th class="p-4 sticky-col text-left">Tipo de gasto</th>
-                                <th class="p-4">Jan</th><th class="p-4">Fev</th><th class="p-4">Mar</th>
-                                <th class="p-4">Abr</th><th class="p-4">Mai</th><th class="p-4">Jun</th>
-                                <th class="p-4">Jul</th><th class="p-4">Ago</th><th class="p-4">Set</th>
-                                <th class="p-4">Out</th><th class="p-4">Nov</th><th class="p-4">Dez</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-zinc-300 text-[11px]">
-                            <!-- CATEGORIA 1: FIXO MENSAL -->
-                            <tr class="category-row group" onclick="toggleCategory('cat-fixo')">
-                                <td class="p-4 sticky-col text-left font-extrabold text-white rounded-l-2xl flex items-center gap-2">
-                                    <svg class="w-3 h-3 text-indigo-400 transform transition-transform" id="icon-cat-fixo" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
-                                    CONTAS FIXAS
-                                </td>
-                                <td class="p-4 font-bold text-indigo-400">5.730</td><td class="p-4">5.730</td><td class="p-4">5.730</td>
-                                <td class="p-4">5.730</td><td class="p-4">5.730</td><td class="p-4">5.730</td>
-                                <td class="p-4">5.730</td><td class="p-4">5.730</td><td class="p-4">5.730</td>
-                                <td class="p-4">5.730</td><td class="p-4">5.730</td><td class="p-4">5.730</td>
-                            </tr>
-                            <tr class="child-row cat-fixo">
-                                <td class="p-3 sticky-col text-left pl-10 text-zinc-500 italic">Internet e Cloud</td>
-                                <td class="p-3">2.164</td><td class="p-3">2.164</td><td class="p-3">2.164</td>
-                                <td class="p-3">2.164</td><td class="p-3">2.164</td><td class="p-3">2.164</td>
-                                <td class="p-3">2.164</td><td class="p-3">2.164</td><td class="p-3">2.164</td>
-                                <td class="p-3">2.164</td><td class="p-3">2.164</td><td class="p-3">2.164</td>
-                            </tr>
-                            <tr class="child-row cat-fixo">
-                                <td class="p-3 sticky-col text-left pl-10 text-zinc-500 italic">Equipa Core</td>
-                                <td class="p-3">3.566</td><td class="p-3">3.566</td><td class="p-3">3.566</td>
-                                <td class="p-3">3.566</td><td class="p-3">3.566</td><td class="p-3">3.566</td>
-                                <td class="p-3">3.566</td><td class="p-3">3.566</td><td class="p-3">3.566</td>
-                                <td class="p-3">3.566</td><td class="p-3">3.566</td><td class="p-3">3.566</td>
-                            </tr>
+                <nav class="flex gap-2">
+                    <button onclick="switchTab('monthly')" id="tab-monthly" class="tab-btn active">Minhas Contas</button>
+                    <button onclick="switchTab('yearly')" id="tab-yearly" class="tab-btn">Plano do Ano</button>
+                    <button onclick="handleLogout()" class="p-2 ml-4 text-zinc-500 hover:text-rose-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    </button>
+                </nav>
+            </div>
+        </header>
 
-                            <!-- CATEGORIA 2: VARIÁVEL -->
-                            <tr class="category-row" onclick="toggleCategory('cat-var')">
-                                <td class="p-4 sticky-col text-left font-extrabold text-white rounded-l-2xl flex items-center gap-2">
-                                    <svg class="w-3 h-3 text-emerald-400 transform transition-transform" id="icon-cat-var" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
-                                    OUTROS GASTOS
-                                </td>
-                                <td class="p-4 font-bold text-emerald-400">1.200</td><td class="p-4">1.500</td><td class="p-4">1.800</td>
-                                <td class="p-4">2.000</td><td class="p-4">2.000</td><td class="p-4">2.500</td>
-                                <td class="p-4">2.500</td><td class="p-4">3.000</td><td class="p-4">3.000</td>
-                                <td class="p-4">3.500</td><td class="p-4">4.000</td><td class="p-4">5.000</td>
-                            </tr>
-                            <tr class="child-row cat-var">
-                                <td class="p-3 sticky-col text-left pl-10 text-zinc-500 italic">Anúncios (Ads)</td>
-                                <td class="p-3">1.200</td><td class="p-3">1.500</td><td class="p-3">1.800</td>
-                                <td class="p-3">2.000</td><td class="p-3">2.000</td><td class="p-3">2.500</td>
-                                <td class="p-3">2.500</td><td class="p-3">3.000</td><td class="p-3">3.000</td>
-                                <td class="p-3">3.500</td><td class="p-3">4.000</td><td class="p-3">5.000</td>
-                            </tr>
-                        </tbody>
-                    </table>
+        <main class="max-w-6xl mx-auto p-4 md:p-8">
+            <!-- ABA DE LANÇAMENTOS -->
+            <section id="section-monthly" class="space-y-8 animate-section">
+                <!-- Cards de Resumo -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bubble-card p-7 border-l-4 border-l-indigo-500">
+                        <p class="text-[11px] font-black text-zinc-500 uppercase mb-2">Total de contas</p>
+                        <h2 class="text-3xl font-bold">R$ 5.730,00</h2>
+                    </div>
+                    <div class="bubble-card p-7 border-l-4 border-l-emerald-500">
+                        <p class="text-[11px] font-black text-zinc-500 uppercase mb-2">O que já paguei</p>
+                        <h2 class="text-3xl font-bold text-emerald-400">R$ 3.864,00</h2>
+                    </div>
+                    <div class="bubble-card p-7 border-l-4 border-l-rose-500">
+                        <p class="text-[11px] font-black text-zinc-500 uppercase mb-2">Falta pagar</p>
+                        <h2 class="text-3xl font-bold text-rose-400">R$ 1.866,00</h2>
+                    </div>
                 </div>
-            </div>
 
-            <div class="bubble-card p-10 h-[400px]">
-                <canvas id="yearlyChart"></canvas>
-            </div>
-        </section>
-    </main>
+                <!-- Formulário -->
+                <div class="bubble-card p-8">
+                    <h3 class="text-[11px] font-black uppercase text-zinc-400 mb-6 tracking-widest">Anotar nova conta</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div class="md:col-span-4"><input type="text" placeholder="O que é? (Ex: Aluguer, Luz...)" class="w-full p-4 rounded-2xl text-sm"></div>
+                        <div class="md:col-span-2"><input type="number" placeholder="Quanto? R$" class="w-full p-4 rounded-2xl text-sm"></div>
+                        <div class="md:col-span-2">
+                            <select class="w-full p-4 rounded-2xl text-sm appearance-none">
+                                <option>Janeiro</option><option>Fevereiro</option><option>Março</option>
+                                <option>Abril</option><option>Maio</option><option>Junho</option>
+                                <option>Julho</option><option>Agosto</option><option>Setembro</option>
+                                <option>Outubro</option><option>Novembro</option><option>Dezembro</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <select class="w-full p-4 rounded-2xl text-sm appearance-none">
+                                <option>2025</option><option>2026</option><option selected>2027</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2"><button class="btn-primary w-full text-white font-bold rounded-2xl h-full text-xs uppercase">Anotar</button></div>
+                    </div>
+                </div>
+
+                <!-- Lista de Contas -->
+                <div class="bubble-card p-8">
+                    <h3 class="text-[11px] font-black uppercase text-zinc-400 mb-4 tracking-widest">Contas deste mês</h3>
+                    <div id="monthly-list" class="space-y-4">
+                        <div onclick="togglePaid('item-servidores')" class="flex items-center justify-between p-5 bg-white/[0.03] rounded-3xl border border-white/5 cursor-pointer hover:bg-white/[0.05] transition-all group" id="item-servidores">
+                            <div class="flex items-center gap-4">
+                                <div class="status-indicator w-3 h-3 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all"></div>
+                                <div>
+                                    <p class="text-sm font-bold group-hover:text-indigo-300 transition-colors">Internet e Cloud</p>
+                                    <p class="text-[10px] text-zinc-500">Tocar para marcar como pago</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold text-amount">R$ 2.164,00</span>
+                        </div>
+
+                        <div onclick="togglePaid('item-equipa')" class="flex items-center justify-between p-5 bg-white/[0.03] rounded-3xl border border-white/5 cursor-pointer hover:bg-white/[0.05] transition-all group" id="item-equipa">
+                            <div class="flex items-center gap-4">
+                                <div class="status-indicator w-3 h-3 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all"></div>
+                                <div>
+                                    <p class="text-sm font-bold group-hover:text-indigo-300 transition-colors">Equipa Core</p>
+                                    <p class="text-[10px] text-zinc-500">Tocar para marcar como pago</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold text-amount">R$ 3.566,00</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA VISÃO ANUAL -->
+            <section id="section-yearly" class="hidden space-y-8 animate-section">
+                <div class="bubble-card p-6 overflow-hidden">
+                    <div class="mb-4 px-4">
+                        <h3 class="text-lg font-bold">Resumo de todo o ano</h3>
+                        <p class="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Toque no nome para ver os detalhes de cada mês</p>
+                    </div>
+                    <div class="table-container overflow-x-auto">
+                        <table class="w-full text-center border-separate border-spacing-y-1">
+                            <thead>
+                                <tr class="text-zinc-500 font-black uppercase text-[9px] tracking-widest">
+                                    <th class="p-4 sticky-col text-left">Tipo de gasto</th>
+                                    <th class="p-4">Jan</th><th class="p-4">Fev</th><th class="p-4">Mar</th>
+                                    <th class="p-4">Abr</th><th class="p-4">Mai</th><th class="p-4">Jun</th>
+                                    <th class="p-4">Jul</th><th class="p-4">Ago</th><th class="p-4">Set</th>
+                                    <th class="p-4">Out</th><th class="p-4">Nov</th><th class="p-4">Dez</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-zinc-300 text-[11px]">
+                                <tr class="category-row group" onclick="toggleCategory('cat-fixo')">
+                                    <td class="p-4 sticky-col text-left font-extrabold text-white rounded-l-2xl flex items-center gap-2">
+                                        <svg class="w-3 h-3 text-indigo-400 transform transition-transform" id="icon-cat-fixo" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                                        CONTAS FIXAS
+                                    </td>
+                                    <td class="p-4 font-bold text-indigo-400">5.730</td><td class="p-4">5.730</td><td class="p-4">5.730</td>
+                                    <td class="p-4">5.730</td><td class="p-4">5.730</td><td class="p-4">5.730</td>
+                                    <td class="p-4">5.730</td><td class="p-4">5.730</td><td class="p-4">5.730</td>
+                                    <td class="p-4">5.730</td><td class="p-4">5.730</td><td class="p-4">5.730</td>
+                                </tr>
+                                <tr class="child-row cat-fixo">
+                                    <td class="p-3 sticky-col text-left pl-10 text-zinc-500 italic">Internet e Cloud</td>
+                                    <td class="p-3">2.164</td><td class="p-3">2.164</td><td class="p-3">2.164</td>
+                                    <td class="p-3">2.164</td><td class="p-3">2.164</td><td class="p-3">2.164</td>
+                                    <td class="p-3">2.164</td><td class="p-3">2.164</td><td class="p-3">2.164</td>
+                                    <td class="p-3">2.164</td><td class="p-3">2.164</td><td class="p-3">2.164</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bubble-card p-10 h-[400px]">
+                    <canvas id="yearlyChart"></canvas>
+                </div>
+            </section>
+        </main>
+    </div>
 
     <script>
+        // Lógica de Autenticação
+        function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+
+            if (email && pass) {
+                // Simulação de login
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                
+                // Se for você (Master)
+                if (email.includes('master')) {
+                    document.getElementById('user-badge').innerText = "Modo Administrador (Master)";
+                    document.getElementById('user-badge').classList.replace('text-indigo-400', 'text-amber-400');
+                }
+            } else {
+                alert("Por favor, preencha o e-mail e a senha.");
+            }
+        }
+
+        function handleLogout() {
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('main-content').classList.add('hidden');
+            document.getElementById('login-pass').value = "";
+        }
+
+        // Navegação de Abas
         function switchTab(tab) {
             document.getElementById('section-monthly').classList.toggle('hidden', tab !== 'monthly');
             document.getElementById('section-yearly').classList.toggle('hidden', tab !== 'yearly');
@@ -286,7 +326,7 @@
             if(tab === 'yearly') setTimeout(renderChart, 50);
         }
 
-        // Marcar como Pago / Não Pago
+        // Sistema de Pago / Não Pago
         function togglePaid(id) {
             const el = document.getElementById(id);
             el.classList.toggle('is-paid');
@@ -296,16 +336,8 @@
         function toggleCategory(catId) {
             const rows = document.querySelectorAll('.' + catId);
             const icon = document.getElementById('icon-' + catId);
-            
-            rows.forEach(row => {
-                row.classList.toggle('active');
-            });
-
-            if (icon.style.transform === "rotate(-90deg)") {
-                icon.style.transform = "rotate(0deg)";
-            } else {
-                icon.style.transform = "rotate(-90deg)";
-            }
+            rows.forEach(row => row.classList.toggle('active'));
+            icon.style.transform = icon.style.transform === "rotate(-90deg)" ? "rotate(0deg)" : "rotate(-90deg)";
         }
 
         let chart;
