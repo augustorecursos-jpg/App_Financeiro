@@ -116,12 +116,17 @@
                             <option value="Poupança">Poupança</option>
                         </select>
                     </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs text-zinc-500 ml-2 font-bold uppercase">Mês de Início</label>
+                        <select id="start-month-input" class="w-full p-3.5 rounded-2xl outline-none appearance-none"></select>
+                    </div>
                     
                     <!-- Campos de Recorrência -->
                     <div class="space-y-2">
                         <label class="text-xs text-zinc-500 ml-2 font-bold uppercase">Recorrência</label>
                         <select id="recurrence-input" onchange="toggleParcelInput()" class="w-full p-3.5 rounded-2xl outline-none appearance-none">
-                            <option value="unico">Apenas este mês</option>
+                            <option value="unico">Apenas o mês de início</option>
                             <option value="fixo">Mensal (Fixo)</option>
                             <option value="parcelado">Parcelado</option>
                         </select>
@@ -216,12 +221,13 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             initData();
-            initMonthFilter();
+            initFilters();
             updateDisplayDate();
             renderMonthly();
         });
 
-        function initMonthFilter() {
+        function initFilters() {
+            // Filtro da Tabela
             const filter = document.getElementById('month-filter');
             filter.innerHTML = "";
             months.forEach((m, i) => {
@@ -230,6 +236,18 @@
                 opt.innerText = m;
                 if(i === selectedMonth) opt.selected = true;
                 filter.appendChild(opt);
+            });
+
+            // Filtro de Início no Formulário
+            const startMonth = document.getElementById('start-month-input');
+            startMonth.innerHTML = "";
+            months.forEach((m, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = m;
+                // Por padrão sugere o mês que está sendo visualizado
+                if(i === selectedMonth) opt.selected = true;
+                startMonth.appendChild(opt);
             });
         }
 
@@ -257,6 +275,7 @@
             const desc = document.getElementById('desc-input').value;
             const val = parseFloat(document.getElementById('value-input').value);
             const type = document.getElementById('type-input').value;
+            const startMonth = parseInt(document.getElementById('start-month-input').value);
             const recurrence = document.getElementById('recurrence-input').value;
             const installments = parseInt(document.getElementById('installments-input').value) || 1;
             const editId = document.getElementById('edit-id').value;
@@ -264,7 +283,6 @@
             if (!desc || isNaN(val)) return showToast("Preencha descrição e valor!", "error");
 
             if (editId) {
-                // Ao editar, editamos apenas a instância específica para não quebrar parcelamentos passados
                 const index = transactions.findIndex(t => t.id === editId);
                 if (index !== -1) {
                     transactions[index] = { ...transactions[index], description: desc, value: val, type: type };
@@ -275,18 +293,35 @@
                 const groupId = Math.random().toString(36).substr(2, 9);
                 
                 if (recurrence === 'unico') {
-                    transactions.push({ id: Math.random().toString(36).substr(2, 9), description: desc, value: val, type: type, month: selectedMonth, year: selectedYear, recurrence: 'unico' });
+                    transactions.push({ 
+                        id: Math.random().toString(36).substr(2, 9), 
+                        description: desc, 
+                        value: val, 
+                        type: type, 
+                        month: startMonth, 
+                        year: selectedYear, 
+                        recurrence: 'unico' 
+                    });
                 } else if (recurrence === 'fixo') {
-                    // Adiciona para todos os meses do ano a partir do selecionado
-                    for (let m = selectedMonth; m < 12; m++) {
-                        transactions.push({ id: Math.random().toString(36).substr(2, 9), groupId, description: desc, value: val, type: type, month: m, year: selectedYear, recurrence: 'fixo' });
+                    // Começa a partir do mês de início selecionado até o fim do ano
+                    for (let m = startMonth; m < 12; m++) {
+                        transactions.push({ 
+                            id: Math.random().toString(36).substr(2, 9), 
+                            groupId, 
+                            description: desc, 
+                            value: val, 
+                            type: type, 
+                            month: m, 
+                            year: selectedYear, 
+                            recurrence: 'fixo' 
+                        });
                     }
                 } else if (recurrence === 'parcelado') {
                     for (let i = 0; i < installments; i++) {
-                        let m = selectedMonth + i;
+                        let m = startMonth + i;
                         let y = selectedYear;
-                        if (m > 11) { m = m % 12; y++; } // Simples virada de ano
-                        if (y > selectedYear) break; // Limite para o ano atual do app para manter performance
+                        if (m > 11) { m = m % 12; y++; } 
+                        if (y > selectedYear) break; 
 
                         transactions.push({ 
                             id: Math.random().toString(36).substr(2, 9), 
@@ -317,8 +352,9 @@
             document.getElementById('value-input').value = t.value;
             document.getElementById('type-input').value = t.type;
             
-            // Esconde opções de recorrência na edição para evitar conflitos de lógica em lote
+            // Esconde campos que não fazem sentido na edição individual simples
             document.getElementById('recurrence-input').parentElement.classList.add('hidden');
+            document.getElementById('start-month-input').parentElement.classList.add('hidden');
             
             document.getElementById('form-title').innerText = "Editando Item";
             document.getElementById('btn-submit').innerText = "Atualizar Item";
@@ -332,13 +368,14 @@
             document.getElementById('btn-submit').innerText = "Salvar Lançamento";
             document.getElementById('btn-cancel').classList.add('hidden');
             document.getElementById('recurrence-input').parentElement.classList.remove('hidden');
+            document.getElementById('start-month-input').parentElement.classList.remove('hidden');
             clearInputs();
         }
 
         function deleteTransaction(id) {
             const t = transactions.find(item => item.id === id);
             if (t && t.groupId) {
-                if (confirm("Este item faz parte de um grupo (fixo/parcelado). Deseja excluir TODOS os lançamentos deste grupo?")) {
+                if (confirm("Este item faz parte de um grupo. Deseja excluir TODOS os lançamentos deste grupo?")) {
                     transactions = transactions.filter(item => item.groupId !== t.groupId);
                 } else {
                     transactions = transactions.filter(item => item.id !== id);
@@ -481,6 +518,8 @@
             document.getElementById('value-input').value = ""; 
             document.getElementById('installments-input').value = "";
             document.getElementById('recurrence-input').value = "unico";
+            // Reseta para o mês atual selecionado
+            document.getElementById('start-month-input').value = selectedMonth;
             toggleParcelInput();
         }
         function resetData() { 
