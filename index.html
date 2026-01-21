@@ -116,7 +116,6 @@
         .yearly-table tr.row-category td:first-child { border-radius: 16px 0 0 16px; border-left: 1px solid rgba(255, 255, 255, 0.05); }
         .yearly-table tr.row-category td:last-child { border-radius: 0 16px 16px 0; border-right: 1px solid rgba(255, 255, 255, 0.05); }
         
-        /* Estilos para o Drill Down */
         .row-detail td {
             background: rgba(255, 255, 255, 0.005);
             font-size: 11px;
@@ -181,7 +180,7 @@
                     </div>
                     <div>
                         <h1 class="text-sm font-black text-white uppercase tracking-tight">Vértice</h1>
-                        <span id="user-display" class="text-[9px] text-indigo-400 font-bold uppercase tracking-widest">Master Cloud</span>
+                        <span id="user-display" class="text-[9px] text-indigo-400 font-bold uppercase tracking-widest">Aguardando...</span>
                     </div>
                 </div>
                 
@@ -342,6 +341,9 @@
     </div>
 
     <script>
+        // --- CONFIGURAÇÃO DE ADMIN EXCLUSIVA ---
+        const MASTER_EMAIL = "seuemail@exemplo.com"; // <-- INSIRA SEU EMAIL AQUI
+
         let currentUser = null;
         let transactions = [];
         let isRegisterMode = false;
@@ -377,10 +379,12 @@
         }
 
         function handleAuth() {
-            const email = document.getElementById('auth-email').value;
+            const email = document.getElementById('auth-email').value.trim();
             const pass = document.getElementById('auth-pass').value;
             if (!email || !pass) return;
+
             const users = JSON.parse(localStorage.getItem('vertice_users') || '{}');
+
             if (isRegisterMode) {
                 const name = document.getElementById('reg-name').value;
                 if (!name) return;
@@ -410,7 +414,16 @@
             currentUser = { email, name };
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-content').classList.remove('hidden');
-            document.getElementById('user-display').innerText = (name || email.split('@')[0]).toUpperCase();
+            
+            // Regra de Admin exclusiva para o seu e-mail
+            const isAdmin = (email.toLowerCase() === MASTER_EMAIL.toLowerCase());
+            const roleText = isAdmin ? "MASTER ADMINISTRADOR" : "USUÁRIO STANDARD";
+            
+            document.getElementById('user-display').innerHTML = `
+                ${(name || email.split('@')[0]).toUpperCase()} 
+                <span class="block text-[7px] text-indigo-300 opacity-60">${roleText}</span>
+            `;
+
             loadData();
             renderMonthly();
         }
@@ -464,6 +477,7 @@
             const inYear = parseInt(document.getElementById('input-year').value);
             
             if(!desc || isNaN(val)) return;
+
             if (editingId) {
                 const idx = transactions.findIndex(t => t.id === editingId);
                 if (idx !== -1) {
@@ -572,8 +586,12 @@
                             R$ ${t.val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
                         </span>
                         <div class="flex gap-1">
-                            <button onclick="editItem(${t.id})" class="text-zinc-600 hover:text-indigo-400 p-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
-                            <button onclick="deleteItem(${t.id})" class="text-zinc-600 hover:text-rose-400 p-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+                            <button onclick="editItem(${t.id})" class="p-2 text-zinc-600 hover:text-indigo-400 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            </button>
+                            <button onclick="deleteItem(${t.id})" class="p-2 text-zinc-600 hover:text-rose-400 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
                         </div>
                     </div>
                 `;
@@ -587,84 +605,80 @@
             document.getElementById('display-pending').innerText = `R$ ${pending.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
             
             const balance = income - totalToPay;
-            const balanceEl = document.getElementById('display-balance');
-            balanceEl.innerText = `R$ ${balance.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            
-            const cardBalance = document.getElementById('card-balance');
-            cardBalance.classList.remove('border-l-zinc-500', 'border-l-emerald-500', 'border-l-rose-500');
-            if(balance > 0) { cardBalance.classList.add('border-l-emerald-500'); balanceEl.className = "text-2xl font-bold text-emerald-400"; }
-            else if(balance < 0) { cardBalance.classList.add('border-l-rose-500'); balanceEl.className = "text-2xl font-bold text-rose-400"; }
-            else { cardBalance.classList.add('border-l-zinc-500'); balanceEl.className = "text-2xl font-bold text-white"; }
+            const balEl = document.getElementById('display-balance');
+            balEl.innerText = `R$ ${balance.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            balEl.className = `text-2xl font-bold ${balance >= 0 ? 'text-white' : 'text-rose-500'}`;
         }
 
         function renderYearly() {
-            const tbody = document.getElementById('yearly-body');
+            const body = document.getElementById('yearly-body');
+            body.innerHTML = '';
             document.getElementById('yearly-year-title').innerText = selectedYear;
-            tbody.innerHTML = '';
-            
-            const categories = ['Renda', 'Despesa Fixa', 'Despesa Variável', 'Investimento', 'Poupança'];
+
+            const categories = ["Renda", "Despesa Fixa", "Despesa Variável", "Investimento", "Poupança"];
             
             categories.forEach(cat => {
+                const isIncome = cat === "Renda";
+                const isEquity = (cat === "Investimento" || cat === "Poupança");
                 const row = document.createElement('tr');
-                row.className = 'row-category cursor-pointer hover:bg-white/5 transition-colors';
+                row.className = "row-category cursor-pointer";
                 row.onclick = () => {
                     if(expandedCategories.has(cat)) expandedCategories.delete(cat);
                     else expandedCategories.add(cat);
                     renderYearly();
                 };
 
-                let catTotal = 0;
-                let cells = `<td><span class="expand-btn">${expandedCategories.has(cat) ? '−' : '+'}</span> <span class="font-bold text-xs uppercase tracking-widest text-zinc-300">${cat}</span></td>`;
-                
-                for(let m=0; m<12; m++) {
+                let html = `<td><span class="expand-btn">${expandedCategories.has(cat) ? '-' : '+'}</span><span class="font-bold text-xs uppercase">${cat}</span></td>`;
+                let totalCat = 0;
+
+                for (let m = 0; m < 12; m++) {
                     const val = transactions
                         .filter(t => t.category === cat && t.month === m && t.year === selectedYear)
-                        .reduce((sum, t) => sum + t.val, 0);
-                    catTotal += val;
-                    cells += `<td class="text-[11px] font-medium ${val > 0 ? (cat === 'Renda' ? 'text-emerald-500/80' : 'text-zinc-400') : 'text-zinc-800'}">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td>`;
+                        .reduce((acc, curr) => acc + curr.val, 0);
+                    totalCat += val;
+                    html += `<td class="text-[11px] ${val > 0 ? (isIncome ? 'text-emerald-400' : (isEquity ? 'text-amber-400' : 'text-white')) : 'text-zinc-800'}">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 1})}</td>`;
                 }
-                
-                cells += `<td class="font-black text-xs ${cat === 'Renda' ? 'text-emerald-400' : 'text-white'}">R$ ${catTotal.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td>`;
-                row.innerHTML = cells;
-                tbody.appendChild(row);
 
-                if(expandedCategories.has(cat)) {
-                    const subItems = transactions.filter(t => t.category === cat && t.year === selectedYear);
-                    const names = [...new Set(subItems.map(t => t.desc.split('[')[0].trim()))];
-                    
-                    names.forEach(name => {
+                html += `<td class="font-black text-white">R$ ${totalCat.toLocaleString('pt-BR', {minimumFractionDigits: 1})}</td>`;
+                row.innerHTML = html;
+                body.appendChild(row);
+
+                if (expandedCategories.has(cat)) {
+                    const subItems = [...new Set(transactions.filter(t => t.category === cat && t.year === selectedYear).map(t => t.desc))];
+                    subItems.forEach(desc => {
                         const subRow = document.createElement('tr');
-                        subRow.className = 'row-detail';
-                        let subCells = `<td class="pl-12 opacity-60 italic">${name}</td>`;
-                        let nameTotal = 0;
-                        for(let m=0; m<12; m++) {
-                            const v = subItems.filter(t => t.month === m && t.desc.startsWith(name)).reduce((sum, t) => sum + t.val, 0);
-                            nameTotal += v;
-                            subCells += `<td class="opacity-40">R$ ${v.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td>`;
+                        subRow.className = "row-detail animate-section";
+                        let subHtml = `<td class="pl-10 italic">${desc}</td>`;
+                        let totalSub = 0;
+                        for (let m = 0; m < 12; m++) {
+                            const v = transactions
+                                .filter(t => t.desc === desc && t.month === m && t.year === selectedYear)
+                                .reduce((acc, curr) => acc + curr.val, 0);
+                            totalSub += v;
+                            subHtml += `<td>${v > 0 ? 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits: 0}) : '-'}</td>`;
                         }
-                        subCells += `<td class="opacity-60 font-bold">R$ ${nameTotal.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td>`;
-                        subRow.innerHTML = subCells;
-                        tbody.appendChild(subRow);
+                        subHtml += `<td class="font-bold">R$ ${totalSub.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td>`;
+                        subRow.innerHTML = subHtml;
+                        body.appendChild(subRow);
                     });
                 }
             });
 
-            // Linha de Saldo Final
+            // Linha de Saldo
             const balanceRow = document.createElement('tr');
-            balanceRow.className = 'row-category border-t-2 border-white/10 mt-4';
-            let balanceCells = `<td><span class="font-black text-xs uppercase tracking-[0.2em] text-indigo-400">Saldo Líquido</span></td>`;
-            let yearTotalBalance = 0;
-
-            for(let m=0; m<12; m++) {
-                const inc = transactions.filter(t => t.category === 'Renda' && t.month === m && t.year === selectedYear).reduce((sum, t) => sum + t.val, 0);
-                const exp = transactions.filter(t => (t.category === 'Despesa Fixa' || t.category === 'Despesa Variável') && t.month === m && t.year === selectedYear).reduce((sum, t) => sum + t.val, 0);
-                const bal = inc - exp;
-                yearTotalBalance += bal;
-                balanceCells += `<td class="text-[11px] font-black ${bal >= 0 ? 'text-emerald-400' : 'text-rose-400'}">R$ ${bal.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td>`;
+            balanceRow.className = "row-category border-t-2 border-indigo-500/30";
+            let balHtml = `<td><span class="font-black text-indigo-400 text-xs uppercase">Saldo Final</span></td>`;
+            let yearTotal = 0;
+            for (let m = 0; m < 12; m++) {
+                const inc = transactions.filter(t => t.category === "Renda" && t.month === m && t.year === selectedYear).reduce((a, b) => a + b.val, 0);
+                const out = transactions.filter(t => !["Renda", "Investimento", "Poupança"].includes(t.category) && t.month === m && t.year === selectedYear).reduce((a, b) => a + b.val, 0);
+                const res = inc - out;
+                yearTotal += res;
+                balHtml += `<td class="text-[11px] font-bold ${res >= 0 ? 'text-emerald-400' : 'text-rose-500'}">R$ ${res.toLocaleString('pt-BR', {minimumFractionDigits: 1})}</td>`;
             }
-            balanceCells += `<td class="font-black text-xs ${yearTotalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}">R$ ${yearTotalBalance.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td>`;
-            balanceRow.innerHTML = balanceCells;
-            tbody.appendChild(balanceRow);
+            balHtml += `<td class="font-black text-white bg-indigo-600/20">R$ ${yearTotal.toLocaleString('pt-BR', {minimumFractionDigits: 1})}</td>`;
+            balanceRow.innerHTML = balHtml;
+            body.appendChild(balanceRow);
         }
     </script>
 </body>
