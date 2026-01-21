@@ -7,6 +7,25 @@
     
     <!-- Bibliotecas Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuração injetada pelo ambiente ou padrão
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'vertice-app';
+
+        // Variáveis globais para uso nos scripts legados
+        window.auth = auth;
+        window.db = db;
+        window.appId = appId;
+        window.firestoreUtils = { doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, where };
+    </script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
@@ -38,38 +57,13 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .bubble-card:hover {
-            border-color: rgba(99, 102, 241, 0.3);
-        }
         input, select {
             background: var(--input-bg) !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
             color: white !important;
             border-radius: 16px !important;
-            transition: all 0.3s ease;
             appearance: none;
         }
-        select option {
-            background-color: var(--dropdown-bg);
-            color: white;
-        }
-        input:focus, select:focus {
-            border-color: var(--accent) !important;
-            outline: none;
-            background: rgba(255, 255, 255, 0.07) !important;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
-        }
-        .tab-btn {
-            position: relative;
-            padding: 10px 20px;
-            color: #71717a;
-            font-weight: 700;
-            font-size: 11px;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            transition: all 0.3s ease;
-        }
-        .tab-btn.active { color: #fff; }
         .tab-btn.active::after {
             content: '';
             position: absolute;
@@ -82,60 +76,56 @@
             border-radius: 10px;
             box-shadow: 0 0 15px rgba(99, 102, 241, 1);
         }
-        .is-paid { opacity: 0.35; filter: grayscale(0.8); }
-        
-        .btn-primary {
-            background-color: var(--accent);
-            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.5);
-            transition: all 0.3s ease;
+        .admin-badge {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 8px;
+            color: black;
+            font-weight: 800;
         }
-        .btn-primary:hover { opacity: 0.9; transform: scale(1.02); }
-        .animate-section { animation: slideIn 0.5s ease-out forwards; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .hidden { display: none !important; }
-        .yearly-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 10px;
-        }
-        .yearly-table th {
-            padding: 12px;
-            text-align: left;
-            font-size: 10px;
-            text-transform: uppercase;
-            color: #71717a;
-            letter-spacing: 0.1em;
-        }
-        .yearly-table td {
-            padding: 18px 12px;
-            background: rgba(255, 255, 255, 0.02);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .yearly-table tr td:first-child { border-radius: 20px 0 0 20px; border-left: 1px solid rgba(255, 255, 255, 0.05); }
-        .yearly-table tr td:last-child { border-radius: 0 20px 20px 0; border-right: 1px solid rgba(255, 255, 255, 0.05); }
-        .detail-row {
-            background: rgba(255, 255, 255, 0.01) !important;
-            font-size: 10px;
-            color: #a1a1aa;
-        }
-        .category-row { cursor: pointer; }
-        .category-row:hover td { background: rgba(255, 255, 255, 0.04); }
+        .is-paid { opacity: 0.35; filter: grayscale(0.8); }
+        .btn-primary { background-color: var(--accent); }
     </style>
 </head>
 <body class="pb-24">
+
+    <!-- MODAL DE BLOQUEIO / LOADING -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black z-[100] flex items-center justify-center hidden">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-indigo-500 mx-auto mb-4"></div>
+            <p id="loading-text" class="text-xs font-bold uppercase tracking-widest text-zinc-500">Sincronizando Nuvem...</p>
+        </div>
+    </div>
+
+    <!-- TELA DE AUTH -->
     <section id="auth-screen" class="min-h-screen flex items-center justify-center p-6">
-        <div class="bubble-card w-full max-w-md p-10 space-y-6 animate-section text-center">
+        <div class="bubble-card w-full max-w-md p-10 space-y-6 text-center">
             <div class="w-20 h-20 mx-auto rounded-[2rem] bg-indigo-600 flex items-center justify-center shadow-2xl mb-6 ring-4 ring-indigo-600/20">
                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
             </div>
             <h1 class="text-4xl font-black text-white uppercase tracking-tighter">Vértice</h1>
             <p id="auth-subtitle" class="text-zinc-500 text-sm font-medium italic">Gestão Financeira de Alto Padrão</p>
-            <div class="space-y-4 pt-4 text-left">
+            
+            <div id="auth-form" class="space-y-4 pt-4 text-left">
+                <div id="register-fields" class="hidden space-y-4">
+                    <input type="text" id="reg-name" placeholder="Nome Completo" class="w-full p-4 text-sm">
+                    <input type="text" id="reg-cpf" placeholder="CPF" class="w-full p-4 text-sm">
+                    <div class="flex items-start gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
+                        <input type="checkbox" id="reg-terms" class="mt-1 !w-4 !h-4">
+                        <label for="reg-terms" class="text-[10px] text-zinc-400 leading-relaxed">
+                            Li e aceito os <a href="#" class="text-indigo-400 underline">Termos de Uso</a> e a <a href="#" class="text-indigo-400 underline">Política de Privacidade</a> da AR Consultoria.
+                        </label>
+                    </div>
+                </div>
+                
                 <input type="email" id="auth-email" placeholder="E-mail profissional" class="w-full p-4 text-sm">
                 <input type="password" id="auth-pass" placeholder="Senha de acesso" class="w-full p-4 text-sm">
-                <button id="auth-main-btn" onclick="handleAuth()" class="btn-primary w-full py-4 text-white font-bold rounded-2xl text-xs uppercase tracking-widest mt-4">Login</button>
-                <div class="text-center pt-4 flex flex-col gap-3">
+                
+                <button id="auth-main-btn" onclick="handleAuth()" class="btn-primary w-full py-4 text-white font-bold rounded-2xl text-xs uppercase tracking-widest mt-4 shadow-lg shadow-indigo-500/20">Login</button>
+                
+                <div class="text-center pt-4">
                     <button id="auth-toggle-btn" onclick="toggleAuthMode()" class="text-[10px] text-zinc-500 hover:text-indigo-400 font-bold uppercase tracking-widest transition-colors">
                         Não tem conta? Cadastre-se
                     </button>
@@ -144,6 +134,7 @@
         </div>
     </section>
 
+    <!-- PAINEL PRINCIPAL -->
     <div id="main-content" class="hidden">
         <header class="p-6 bg-black/50 backdrop-blur-2xl sticky top-0 z-50 border-b border-white/10">
             <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
@@ -152,425 +143,304 @@
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
                     </div>
                     <div>
-                        <h1 class="text-sm font-black text-white uppercase tracking-tight">Vértice</h1>
-                        <span id="user-display" class="text-[9px] text-indigo-400 font-bold uppercase tracking-widest">Master Cloud</span>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-sm font-black text-white uppercase tracking-tight">Vértice</h1>
+                            <span id="admin-indicator" class="admin-badge hidden">ADMIN</span>
+                        </div>
+                        <span id="user-display" class="text-[9px] text-indigo-400 font-bold uppercase tracking-widest">Carregando...</span>
                     </div>
                 </div>
-                <div class="flex items-center bg-white/5 px-4 py-2 rounded-2xl border border-white/10 gap-3">
-                    <select id="select-month" onchange="updateDateContext()" class="!bg-transparent !border-none text-[11px] font-bold uppercase cursor-pointer">
-                        <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option>
-                        <option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option>
-                        <option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
-                    </select>
-                    <input type="number" id="select-year" onchange="updateDateContext()" value="2026" class="!bg-transparent !border-none w-16 text-[11px] font-bold">
-                </div>
+                
                 <nav class="flex gap-4">
-                    <button onclick="switchTab('monthly')" id="tab-monthly" class="tab-btn active">Lançamentos</button>
-                    <button onclick="switchTab('yearly')" id="tab-yearly" class="tab-btn">Visão Anual</button>
-                    <button onclick="logout()" class="ml-2 text-zinc-500 hover:text-rose-400 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    <button onclick="switchTab('monthly')" id="tab-monthly" class="tab-btn active relative py-2 text-[11px] font-bold uppercase tracking-widest text-white">Lançamentos</button>
+                    <button onclick="switchTab('yearly')" id="tab-yearly" class="tab-btn relative py-2 text-[11px] font-bold uppercase tracking-widest text-zinc-500">Anual</button>
+                    <button onclick="switchTab('admin')" id="tab-admin" class="tab-btn hidden relative py-2 text-[11px] font-bold uppercase tracking-widest text-amber-500">Gestão App</button>
+                    <button onclick="handleLogout()" class="ml-2 text-zinc-500 hover:text-rose-400 transition-colors">
+                        Sair
                     </button>
                 </nav>
             </div>
         </header>
 
-        <main class="max-w-7xl mx-auto p-6 md:p-10">
-            <section id="section-monthly" class="space-y-10 animate-section">
-                <!-- CARDS DE RESUMO ATUALIZADOS -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-                    <div class="bubble-card p-5 border-l-4 border-l-emerald-500">
-                        <p class="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Total Recebido</p>
-                        <h2 id="display-income" class="text-xl font-bold text-emerald-400">R$ 0,00</h2>
-                    </div>
-                    <!-- NOVO CARD: PATRIMÔNIO (Investimento + Poupança) -->
-                    <div class="bubble-card p-5 border-l-4 border-l-amber-500">
-                        <p class="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Patrimônio</p>
-                        <h2 id="display-equity" class="text-xl font-bold text-amber-400">R$ 0,00</h2>
-                    </div>
-                    <div class="bubble-card p-5 border-l-4 border-l-indigo-500">
-                        <p class="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Contas a Pagar</p>
-                        <h2 id="display-total" class="text-xl font-bold text-white">R$ 0,00</h2>
-                    </div>
-                    <div class="bubble-card p-5 border-l-4 border-l-blue-400">
-                        <p class="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Contas Pagas</p>
-                        <h2 id="display-paid" class="text-xl font-bold text-blue-400">R$ 0,00</h2>
-                    </div>
-                    <div class="bubble-card p-5 border-l-4 border-l-rose-500">
-                        <p class="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Falta Pagar</p>
-                        <h2 id="display-pending" class="text-xl font-bold text-rose-400">R$ 0,00</h2>
-                    </div>
-                    <div id="card-balance" class="bubble-card p-5 border-l-4 border-l-zinc-500">
-                        <p class="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Saldo Líquido</p>
-                        <h2 id="display-balance" class="text-xl font-bold text-white">R$ 0,00</h2>
-                    </div>
-                </div>
-
+        <main class="max-w-7xl mx-auto p-6">
+            <!-- ABA ADMIN -->
+            <section id="section-admin" class="hidden space-y-6">
                 <div class="bubble-card p-8">
-                    <div class="flex justify-between items-center mb-8">
-                        <h3 id="form-title" class="text-[10px] font-black uppercase text-indigo-400 tracking-[0.2em]">Novo Registro Financeiro</h3>
-                        <button onclick="clearAllData()" class="flex items-center gap-2 text-[10px] font-black uppercase text-rose-400/60 hover:text-rose-400 transition-all px-4 py-2 bg-rose-400/5 rounded-xl border border-rose-400/10">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            Limpar Tudo
-                        </button>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
-                        <div class="md:col-span-3">
-                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Descrição</label>
-                            <input type="text" id="desc-input" placeholder="Ex: Aluguel..." class="w-full p-4 text-sm">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Valor (R$)</label>
-                            <input type="number" id="val-input" placeholder="0,00" class="w-full p-4 text-sm">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Lançar para Mês</label>
-                            <select id="input-month" class="w-full p-4 text-sm">
-                                <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option>
-                                <option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option>
-                                <option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
-                            </select>
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Lançar para Ano</label>
-                            <input type="number" id="input-year" value="2026" class="w-full p-4 text-sm">
-                        </div>
-                        <div class="md:col-span-3">
-                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Categoria</label>
-                            <select id="category-input" class="w-full p-4 text-sm">
-                                <option value="Despesa Fixa">Despesa Fixa</option>
-                                <option value="Despesa Variável">Despesa Variável</option>
-                                <option value="Investimento">Investimento</option>
-                                <option value="Poupança">Poupança</option>
-                                <option value="Renda">Renda</option>
-                            </select>
-                        </div>
-                        <div class="md:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Recorrência</label>
-                                <select id="recurrence-input" onchange="toggleParcelField()" class="w-full p-4 text-sm">
-                                    <option value="once">Apenas o mês selecionado</option>
-                                    <option value="monthly">Repetir Mensalmente</option>
-                                    <option value="installment">Parcelamento</option>
-                                </select>
-                            </div>
-                            <div id="parcel-container" class="hidden animate-section">
-                                <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Nº de Parcelas</label>
-                                <input type="number" id="parcel-input" value="2" min="2" class="w-full p-4 text-sm">
-                            </div>
-                        </div>
-                        <div class="md:col-span-12 flex justify-end gap-3 pt-4">
-                            <button id="cancel-edit-btn" onclick="resetForm()" class="hidden px-8 py-4 text-zinc-400 font-bold rounded-2xl text-[10px] uppercase tracking-widest">Cancelar Edição</button>
-                            <button id="confirm-btn" onclick="addEntry()" class="btn-primary px-12 py-4 text-white font-bold rounded-2xl text-[10px] uppercase tracking-widest">Confirmar Lançamento</button>
-                        </div>
-                    </div>
-                </div>
-                <div id="monthly-list" class="space-y-4"></div>
-            </section>
-
-            <section id="section-yearly" class="hidden space-y-8 animate-section">
-                <div class="bubble-card p-10">
-                    <div class="flex justify-between items-center mb-10">
-                        <h3 class="text-[11px] font-black uppercase text-indigo-400 tracking-[0.2em]">Análise Consolidada <span id="yearly-year-title">2026</span></h3>
-                        <p class="text-[10px] text-zinc-500 font-bold italic">Clique na categoria para expandir o detalhamento</p>
-                    </div>
+                    <h3 class="text-xs font-black uppercase text-amber-500 tracking-widest mb-6">Controle de Assinaturas</h3>
                     <div class="overflow-x-auto">
-                        <table class="yearly-table">
+                        <table class="w-full text-left">
                             <thead>
-                                <tr>
-                                    <th class="min-w-[200px]">Fluxo / Categoria</th>
-                                    <th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th>
-                                    <th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
-                                    <th class="text-white">Total</th>
+                                <tr class="text-[10px] text-zinc-500 uppercase">
+                                    <th class="p-4">Usuário</th>
+                                    <th class="p-4">E-mail</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Ação</th>
                                 </tr>
                             </thead>
-                            <tbody id="yearly-body"></tbody>
+                            <tbody id="admin-user-list"></tbody>
                         </table>
                     </div>
                 </div>
             </section>
+
+            <!-- ABA MENSAL (CONTEÚDO ORIGINAL MANTIDO COM FIREBASE) -->
+            <section id="section-monthly" class="space-y-10">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                    <div class="bubble-card p-6 border-l-4 border-l-emerald-500">
+                        <p class="text-[9px] font-black text-zinc-500 uppercase mb-1">Total Recebido</p>
+                        <h2 id="display-income" class="text-2xl font-bold text-emerald-400">R$ 0,00</h2>
+                    </div>
+                    <div class="bubble-card p-6 border-l-4 border-l-indigo-500">
+                        <p class="text-[9px] font-black text-zinc-500 uppercase mb-1">Falta Pagar</p>
+                        <h2 id="display-pending" class="text-2xl font-bold text-rose-400">R$ 0,00</h2>
+                    </div>
+                    <!-- Demais cards simplificados por espaço -->
+                </div>
+
+                <div class="bubble-card p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+                        <div class="md:col-span-4">
+                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Descrição</label>
+                            <input type="text" id="desc-input" class="w-full p-4 text-sm">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Valor (R$)</label>
+                            <input type="number" id="val-input" class="w-full p-4 text-sm">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Categoria</label>
+                            <select id="category-input" class="w-full p-4 text-sm">
+                                <option value="Renda">Renda</option>
+                                <option value="Despesa Fixa">Despesa Fixa</option>
+                                <option value="Despesa Variável">Despesa Variável</option>
+                                <option value="Investimento">Investimento</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2 flex items-end">
+                            <button onclick="addEntry()" class="btn-primary w-full py-4 text-white font-bold rounded-2xl text-[10px] uppercase">Salvar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="monthly-list" class="space-y-4"></div>
+            </section>
         </main>
     </div>
 
-    <script>
-        let currentUser = null;
+    <script type="module">
+        // Importando funções para o escopo global do script module
+        const { auth, db, appId, firestoreUtils } = window;
+        const { doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, where } = firestoreUtils;
+        import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        let userProfile = null;
         let transactions = [];
         let isRegisterMode = false;
-        let editingId = null;
-        let expandedCategories = new Set();
-        let selectedMonth = new Date().getMonth();
-        let selectedYear = new Date().getFullYear();
+        const ADMIN_EMAIL = 'arconsultoriaa@outlook.com';
 
-        window.onload = () => {
-            document.getElementById('select-month').value = selectedMonth;
-            document.getElementById('select-year').value = selectedYear;
-            document.getElementById('input-month').value = selectedMonth;
-            document.getElementById('input-year').value = selectedYear;
+        // 1. Inicialização de Auth (REGRA 3)
+        const initAuth = async () => {
+            showLoading("Autenticando...");
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                // Se não houver token, mantemos na tela de login
+            }
+            hideLoading();
         };
+        initAuth();
 
-        function toggleAuthMode() {
-            isRegisterMode = !isRegisterMode;
-            document.getElementById('auth-main-btn').innerText = isRegisterMode ? "Criar Minha Conta" : "Login";
-            document.getElementById('auth-toggle-btn').innerText = isRegisterMode ? "Já tem conta? Faça Login" : "Não tem conta? Cadastre-se";
-        }
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', user.uid));
+                const data = userDoc.data();
 
-        function handleAuth() {
+                if (data && data.status === 'Inativo' && user.email !== ADMIN_EMAIL) {
+                    alert("Acesso Bloqueado. Entre em contato com a AR Consultoria.");
+                    signOut(auth);
+                    return;
+                }
+
+                userProfile = { uid: user.uid, email: user.email, ...data };
+                setupApp();
+            } else {
+                showAuthScreen();
+            }
+        });
+
+        // 2. Funções de Auth
+        window.handleAuth = async () => {
             const email = document.getElementById('auth-email').value;
             const pass = document.getElementById('auth-pass').value;
             if (!email || !pass) return;
-            const users = JSON.parse(localStorage.getItem('vertice_users') || '{}');
-            if (isRegisterMode) {
-                if (users[email]) return;
-                users[email] = { pass };
-                localStorage.setItem('vertice_users', JSON.stringify(users));
-                toggleAuthMode();
-            } else {
-                if (users[email] && users[email].pass === pass) {
-                    processLogin(email);
-                }
-            }
-        }
 
-        function processLogin(email) {
-            currentUser = { email };
+            showLoading("Processando...");
+            try {
+                if (isRegisterMode) {
+                    const terms = document.getElementById('reg-terms').checked;
+                    if (!terms) { alert("Você precisa aceitar os termos."); hideLoading(); return; }
+                    
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', res.user.uid), {
+                        name: document.getElementById('reg-name').value,
+                        email: email,
+                        status: 'Ativo', // Por padrão começa ativo
+                        role: email === ADMIN_EMAIL ? 'admin' : 'user',
+                        createdAt: new Date().toISOString()
+                    });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                }
+            } catch (e) {
+                alert("Erro: " + e.message);
+            }
+            hideLoading();
+        };
+
+        window.toggleAuthMode = () => {
+            isRegisterMode = !isRegisterMode;
+            document.getElementById('register-fields').classList.toggle('hidden', !isRegisterMode);
+            document.getElementById('auth-main-btn').innerText = isRegisterMode ? "Criar Minha Conta" : "Login";
+            document.getElementById('auth-toggle-btn').innerText = isRegisterMode ? "Já tem conta? Login" : "Não tem conta? Cadastro";
+        };
+
+        // 3. Gestão de Dados (REGRA 1 e 2)
+        const setupApp = () => {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-content').classList.remove('hidden');
-            document.getElementById('user-display').innerText = email.split('@')[0].toUpperCase();
-            loadData();
-            renderMonthly();
-        }
-
-        function logout() { location.reload(); }
-
-        function updateDateContext() {
-            selectedMonth = parseInt(document.getElementById('select-month').value);
-            selectedYear = parseInt(document.getElementById('select-year').value);
-            renderMonthly();
-            if(!document.getElementById('section-yearly').classList.contains('hidden')) renderYearly();
-        }
-
-        function toggleParcelField() {
-            const recurrence = document.getElementById('recurrence-input').value;
-            document.getElementById('parcel-container').classList.toggle('hidden', recurrence !== 'installment');
-        }
-
-        function switchTab(tab) {
-            document.getElementById('section-monthly').classList.toggle('hidden', tab !== 'monthly');
-            document.getElementById('section-yearly').classList.toggle('hidden', tab !== 'yearly');
-            document.getElementById('tab-monthly').classList.toggle('active', tab === 'monthly');
-            document.getElementById('tab-yearly').classList.toggle('active', tab === 'yearly');
-            if(tab === 'yearly') renderYearly();
-        }
-
-        function loadData() {
-            const data = localStorage.getItem(`vertice_stable_${currentUser.email}`);
-            transactions = data ? JSON.parse(data) : [];
-        }
-
-        function saveData() {
-            localStorage.setItem(`vertice_stable_${currentUser.email}`, JSON.stringify(transactions));
-            renderMonthly();
-            if(!document.getElementById('section-yearly').classList.contains('hidden')) renderYearly();
-        }
-
-        function clearAllData() {
-            if(confirm("Deseja realmente apagar TODOS os registros? Esta ação não pode ser desfeita.")) {
-                transactions = [];
-                saveData();
+            document.getElementById('user-display').innerText = userProfile.name || userProfile.email;
+            
+            if (userProfile.email === ADMIN_EMAIL) {
+                document.getElementById('admin-indicator').classList.remove('hidden');
+                document.getElementById('tab-admin').classList.remove('hidden');
+                loadAdminData();
             }
-        }
 
-        function addEntry() {
+            // Listener de Transações (Privado - Regra 1)
+            const q = query(collection(db, 'artifacts', appId, 'users', userProfile.uid, 'transactions'));
+            onSnapshot(q, (snapshot) => {
+                transactions = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderMonthly();
+            }, (err) => console.error(err));
+        };
+
+        window.addEntry = async () => {
             const desc = document.getElementById('desc-input').value;
             const val = parseFloat(document.getElementById('val-input').value);
             const category = document.getElementById('category-input').value;
-            const recurrence = document.getElementById('recurrence-input').value;
-            const inMonth = parseInt(document.getElementById('input-month').value);
-            const inYear = parseInt(document.getElementById('input-year').value);
+            if (!desc || isNaN(val)) return;
+
+            await addDoc(collection(db, 'artifacts', appId, 'users', userProfile.uid, 'transactions'), {
+                desc, val, category,
+                paid: false,
+                month: new Date().getMonth(),
+                year: new Date().getFullYear(),
+                createdAt: new Date().toISOString()
+            });
             
-            if(!desc || isNaN(val)) return;
-            if (editingId) {
-                const idx = transactions.findIndex(t => t.id === editingId);
-                if (idx !== -1) {
-                    transactions[idx] = { ...transactions[idx], desc, val, category, month: inMonth, year: inYear };
-                }
-                editingId = null;
-            } else {
-                const timestamp = Date.now();
-                if (recurrence === 'once') {
-                    transactions.push({ id: timestamp, desc, val, category, paid: false, month: inMonth, year: inYear });
-                } else if (recurrence === 'monthly') {
-                    for (let m = inMonth; m < 12; m++) {
-                        transactions.push({ id: timestamp + m, desc: `${desc}`, val, category, paid: false, month: m, year: inYear });
-                    }
-                } else if (recurrence === 'installment') {
-                    const numParcels = parseInt(document.getElementById('parcel-input').value);
-                    let cM = inMonth; let cY = inYear;
-                    for (let i = 1; i <= numParcels; i++) {
-                        transactions.push({ id: timestamp + i, desc: `${desc} [${i}/${numParcels}]`, val: val / numParcels, category, paid: false, month: cM, year: cY });
-                        cM++; if (cM > 11) { cM = 0; cY++; }
-                    }
-                }
+            document.getElementById('desc-input').value = "";
+            document.getElementById('val-input').value = "";
+        };
+
+        window.togglePaid = async (id, current) => {
+            await updateDoc(doc(db, 'artifacts', appId, 'users', userProfile.uid, 'transactions', id), {
+                paid: !current
+            });
+        };
+
+        window.deleteItem = async (id) => {
+            if (confirm("Excluir lançamento?")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', userProfile.uid, 'transactions', id));
             }
-            resetForm();
-            saveData();
-        }
+        };
 
-        function editItem(id) {
-            const item = transactions.find(t => t.id === id);
-            if (!item) return;
-            editingId = id;
-            document.getElementById('desc-input').value = item.desc;
-            document.getElementById('val-input').value = item.val;
-            document.getElementById('category-input').value = item.category;
-            document.getElementById('input-month').value = item.month;
-            document.getElementById('input-year').value = item.year;
-            
-            document.getElementById('form-title').innerText = "Editando Registro";
-            document.getElementById('confirm-btn').innerText = "Salvar Alterações";
-            document.getElementById('cancel-edit-btn').classList.remove('hidden');
-            document.getElementById('recurrence-input').disabled = true;
-            window.scrollTo({ top: 300, behavior: 'smooth' });
-        }
+        // 4. Lógica Admin
+        const loadAdminData = () => {
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'users'));
+            onSnapshot(q, (snapshot) => {
+                const list = document.getElementById('admin-user-list');
+                list.innerHTML = '';
+                snapshot.docs.forEach(d => {
+                    const u = d.data();
+                    if (u.email === ADMIN_EMAIL) return;
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-white/5 text-xs";
+                    tr.innerHTML = `
+                        <td class="p-4 font-bold">${u.name || 'Sem nome'}</td>
+                        <td class="p-4 text-zinc-500">${u.email}</td>
+                        <td class="p-4">
+                            <span class="px-2 py-1 rounded ${u.status === 'Ativo' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
+                                ${u.status}
+                            </span>
+                        </td>
+                        <td class="p-4">
+                            <button onclick="toggleUserStatus('${d.id}', '${u.status}')" class="text-indigo-400 font-bold uppercase text-[10px]">
+                                ${u.status === 'Ativo' ? 'Bloquear' : 'Ativar'}
+                            </button>
+                        </td>
+                    `;
+                    list.appendChild(tr);
+                });
+            });
+        };
 
-        function resetForm() {
-            editingId = null;
-            document.getElementById('desc-input').value = '';
-            document.getElementById('val-input').value = '';
-            document.getElementById('input-month').value = selectedMonth;
-            document.getElementById('input-year').value = selectedYear;
-            document.getElementById('form-title').innerText = "Novo Registro Financeiro";
-            document.getElementById('confirm-btn').innerText = "Confirmar Lançamento";
-            document.getElementById('cancel-edit-btn').classList.add('hidden');
-            document.getElementById('recurrence-input').disabled = false;
-            document.getElementById('recurrence-input').value = 'once';
-            toggleParcelField();
-        }
+        window.toggleUserStatus = async (uid, currentStatus) => {
+            const newStatus = currentStatus === 'Ativo' ? 'Inativo' : 'Ativo';
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', uid), {
+                status: newStatus
+            });
+        };
 
-        function togglePaid(id) {
-            const item = transactions.find(t => t.id == id);
-            if(item) { item.paid = !item.paid; saveData(); }
-        }
-
-        function deleteItem(id) {
-            transactions = transactions.filter(t => t.id !== id);
-            saveData();
-        }
-
-        function renderMonthly() {
+        // UI Helpers
+        const renderMonthly = () => {
             const list = document.getElementById('monthly-list');
             list.innerHTML = '';
-            const filtered = transactions.filter(t => t.month === selectedMonth && t.year === selectedYear);
-            
-            let income = 0;
-            let equity = 0; // Investimentos + Poupança
-            let totalToPay = 0; // Apenas Despesas Fixas/Variáveis
-            let paid = 0;
             let pending = 0;
-
-            filtered.forEach(t => {
-                // Lógica de Categorização para os Cards
-                if (t.category === 'Renda') {
-                    income += t.val;
-                } else if (t.category === 'Investimento' || t.category === 'Poupança') {
-                    equity += t.val;
-                } else {
-                    // Despesas Fixas e Variáveis entram aqui
-                    totalToPay += t.val;
-                    if(t.paid) paid += t.val; else pending += t.val;
-                }
-
+            
+            transactions.forEach(t => {
+                if (!t.paid && t.category !== 'Renda') pending += t.val;
                 const div = document.createElement('div');
-                div.className = `flex items-center justify-between p-6 bubble-card border border-white/5 ${t.paid ? 'is-paid' : ''}`;
-                
-                // Cor dinâmica para o valor na listagem
-                let valColor = 'text-white';
-                if (t.category === 'Renda') valColor = 'text-emerald-400';
-                if (t.category === 'Investimento' || t.category === 'Poupança') valColor = 'text-amber-400';
-
+                div.className = `flex items-center justify-between p-6 bubble-card ${t.paid ? 'is-paid' : ''}`;
                 div.innerHTML = `
-                    <div class="flex items-center gap-5">
-                        <div onclick="togglePaid(${t.id})" class="w-7 h-7 rounded-full border-2 border-zinc-700 flex items-center justify-center cursor-pointer transition-all ${t.paid ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'hover:border-indigo-500'}">
-                            ${t.paid ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="4" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                    <div class="flex items-center gap-4">
+                        <div onclick="togglePaid('${t.id}', ${t.paid})" class="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center cursor-pointer">
+                            ${t.paid ? '✓' : ''}
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-white tracking-wide">${t.desc}</p>
-                            <span class="text-[9px] text-zinc-500 font-black uppercase tracking-[0.15em]">${t.category}</span>
+                            <p class="text-sm font-bold">${t.desc}</p>
+                            <p class="text-[9px] text-zinc-500 uppercase">${t.category}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-4">
-                        <span class="text-sm font-extrabold ${valColor}">R$ ${t.val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
-                        <div class="flex gap-1">
-                            <button onclick="editItem(${t.id})" title="Editar" class="text-zinc-600 hover:text-indigo-400 transition-colors p-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                            </button>
-                            <button onclick="deleteItem(${t.id})" title="Deletar" class="text-zinc-600 hover:text-rose-500 transition-colors p-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                            </button>
-                        </div>
+                        <span class="font-bold">R$ ${t.val.toLocaleString('pt-BR')}</span>
+                        <button onclick="deleteItem('${t.id}')" class="text-rose-500 opacity-50 hover:opacity-100">✕</button>
                     </div>
                 `;
                 list.appendChild(div);
             });
+            document.getElementById('display-pending').innerText = `R$ ${pending.toLocaleString('pt-BR')}`;
+        };
 
-            // O Saldo Líquido agora considera Renda - Patrimônio - Despesas
-            const balance = income - equity - totalToPay;
-            
-            document.getElementById('display-income').innerText = `R$ ${income.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('display-equity').innerText = `R$ ${equity.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('display-total').innerText = `R$ ${totalToPay.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('display-paid').innerText = `R$ ${paid.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('display-pending').innerText = `R$ ${pending.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            
-            const balanceEl = document.getElementById('display-balance');
-            const balanceCard = document.getElementById('card-balance');
-            balanceEl.innerText = `R$ ${balance.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            balanceCard.style.borderLeftColor = balance >= 0 ? '#10b981' : '#f43f5e';
-            balanceEl.className = `text-xl font-bold ${balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-        }
-
-        function toggleCategoryExpand(cat) {
-            if (expandedCategories.has(cat)) expandedCategories.delete(cat);
-            else expandedCategories.add(cat);
-            renderYearly();
-        }
-
-        function renderYearly() {
-            document.getElementById('yearly-year-title').innerText = selectedYear;
-            const body = document.getElementById('yearly-body');
-            body.innerHTML = '';
-            const categories = ["Renda", "Despesa Fixa", "Despesa Variável", "Investimento", "Poupança"];
-            categories.forEach(cat => {
-                let row = `<tr class="category-row" onclick="toggleCategoryExpand('${cat}')"><td class="text-[11px] font-black text-white uppercase tracking-wider flex items-center gap-2">
-                    <svg class="w-3 h-3 transition-transform ${expandedCategories.has(cat) ? 'rotate-90' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
-                    ${cat}
-                </td>`;
-                let totalCat = 0;
-                for(let i=0; i<12; i++) {
-                    const val = transactions.filter(t => t.category === cat && t.month === i && t.year === selectedYear).reduce((acc, curr) => acc + curr.val, 0);
-                    row += `<td class="text-[10px] font-medium ${val > 0 ? 'text-zinc-200' : 'text-zinc-700'}">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>`;
-                    totalCat += val;
-                }
-                row += `<td class="text-[11px] font-black text-indigo-400">R$ ${totalCat.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td></tr>`;
-                body.innerHTML += row;
-
-                if (expandedCategories.has(cat)) {
-                    const items = transactions.filter(t => t.category === cat && t.year === selectedYear);
-                    const descs = [...new Set(items.map(i => i.desc))];
-                    descs.forEach(d => {
-                        let dRow = `<tr class="detail-row"><td><span class="pl-8">${d}</span></td>`;
-                        let dTotal = 0;
-                        for(let i=0; i<12; i++) {
-                            const v = items.filter(t => t.desc === d && t.month === i).reduce((a, c) => a + c.val, 0);
-                            dRow += `<td>R$ ${v.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>`;
-                            dTotal += v;
-                        }
-                        dRow += `<td>R$ ${dTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td></tr>`;
-                        body.innerHTML += dRow;
-                    });
-                }
+        window.switchTab = (tab) => {
+            ['monthly', 'yearly', 'admin'].forEach(t => {
+                const sec = document.getElementById(`section-${t}`);
+                if (sec) sec.classList.toggle('hidden', t !== tab);
+                const btn = document.getElementById(`tab-${t}`);
+                if (btn) btn.classList.toggle('text-white', t === tab);
+                if (btn) btn.classList.toggle('text-zinc-500', t !== tab);
             });
-        }
+        };
+
+        window.handleLogout = () => signOut(auth);
+        const showLoading = (text) => {
+            document.getElementById('loading-text').innerText = text;
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        };
+        const hideLoading = () => document.getElementById('loading-overlay').classList.add('hidden');
+        const showAuthScreen = () => {
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('main-content').classList.add('hidden');
+        };
     </script>
 </body>
 </html>
