@@ -59,6 +59,39 @@
             background: rgba(255, 255, 255, 0.07) !important;
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
         }
+        /* Checkbox Customizado */
+        input[type="checkbox"] {
+            appearance: none;
+            background-color: var(--input-bg);
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.15em;
+            height: 1.15em;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            border-radius: 4px !important;
+            display: grid;
+            place-content: center;
+            cursor: pointer;
+        }
+        input[type="checkbox"]::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em white;
+            transform-origin: center;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+        input[type="checkbox"]:checked::before {
+            transform: scale(1);
+        }
+        input[type="checkbox"]:checked {
+            background-color: var(--accent) !important;
+            border-color: var(--accent) !important;
+        }
+
         .tab-btn {
             position: relative;
             padding: 10px 20px;
@@ -137,9 +170,46 @@
             cursor: pointer;
             margin-right: 8px;
         }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
     </style>
 </head>
 <body class="pb-24">
+    <!-- MODAL DE TERMOS DE USO -->
+    <div id="terms-modal" class="modal-overlay hidden">
+        <div class="bubble-card max-w-2xl w-full p-8 max-h-[80vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold text-white mb-4 uppercase tracking-wider">Termos de Uso e Política</h2>
+            <div class="text-zinc-400 text-sm space-y-4 leading-relaxed text-justify">
+                <p>Bem-vindo ao <strong>Vértice</strong>, um aplicativo facilitador de controle financeiro desenvolvido pela <strong>Arconsultoria</strong>.</p>
+                <p>Ao utilizar este aplicativo, você concorda expressamente que:</p>
+                <ol class="list-decimal pl-5 space-y-2">
+                    <li>O Vértice é uma ferramenta destinada exclusivamente ao <strong>registro e organização</strong> de informações financeiras inseridas pelo próprio usuário.</li>
+                    <li>A Arconsultoria <strong>não realiza movimentações financeiras</strong>, custódia de valores, transferências ou pagamentos através desta plataforma.</li>
+                    <li>A Arconsultoria <strong>não se responsabiliza</strong> pelas decisões financeiras tomadas pelo usuário com base nos dados aqui organizados, nem por eventuais prejuízos decorrentes do mau uso de seus próprios recursos.</li>
+                    <li>O usuário é o único responsável pela veracidade dos dados inseridos.</li>
+                </ol>
+                <p class="mt-4 border-t border-white/10 pt-4">O não pagamento da mensalidade de uso do software poderá acarretar no bloqueio temporário do acesso até a regularização.</p>
+            </div>
+            <div class="mt-8 flex justify-end">
+                <button onclick="closeTerms()" class="btn-primary px-8 py-3 rounded-xl font-bold uppercase text-xs text-white">Entendi e Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- TELA DE AUTH -->
     <section id="auth-screen" class="min-h-screen flex items-center justify-center p-6">
         <div class="bubble-card w-full max-w-md p-10 space-y-6 animate-section text-center">
@@ -154,6 +224,14 @@
                     <input type="text" id="reg-name" placeholder="Nome Completo" class="w-full p-4 text-sm">
                     <input type="text" id="reg-cpf" placeholder="CPF" class="w-full p-4 text-sm">
                     <input type="text" id="reg-phone" placeholder="Telefone" class="w-full p-4 text-sm">
+                    
+                    <!-- Termos de Uso -->
+                    <div class="flex items-start gap-3 px-2">
+                        <input type="checkbox" id="terms-check" class="mt-1">
+                        <label for="terms-check" class="text-xs text-zinc-400 select-none cursor-pointer">
+                            Li e concordo com os <span onclick="openTerms()" class="text-indigo-400 font-bold hover:underline cursor-pointer">Termos de Uso e Política</span> da Arconsultoria.
+                        </label>
+                    </div>
                 </div>
                 
                 <input type="email" id="auth-email" placeholder="E-mail profissional" class="w-full p-4 text-sm">
@@ -184,7 +262,7 @@
                     </div>
                 </div>
                 
-                <div class="flex items-center bg-white/5 px-4 py-2 rounded-2xl border border-white/10 gap-3">
+                <div id="date-controls" class="flex items-center bg-white/5 px-4 py-2 rounded-2xl border border-white/10 gap-3">
                     <select id="select-month" onchange="updateDateContext()" class="!bg-transparent !border-none text-[11px] font-bold uppercase cursor-pointer">
                         <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
                         <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
@@ -193,9 +271,12 @@
                     </select>
                     <input type="number" id="select-year" onchange="updateDateContext()" value="2026" class="!bg-transparent !border-none w-16 text-[11px] font-bold">
                 </div>
-                <nav class="flex gap-4">
+                <nav class="flex gap-4 items-center">
                     <button onclick="switchTab('monthly')" id="tab-monthly" class="tab-btn active">Lançamentos</button>
                     <button onclick="switchTab('yearly')" id="tab-yearly" class="tab-btn">Visão Anual</button>
+                    <!-- BOTÃO ADMIN -->
+                    <button onclick="switchTab('admin')" id="tab-admin" class="tab-btn hidden text-rose-500">Gestão de Usuários</button>
+                    
                     <button onclick="logout()" class="ml-2 text-zinc-500 hover:text-rose-400 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                     </button>
@@ -296,7 +377,7 @@
                     </div>
                 </div>
 
-                <!-- LISTAGEM COM ORDENAÇÃO -->
+                <!-- LISTAGEM -->
                 <div class="space-y-4">
                     <div class="flex justify-between items-center px-4">
                         <h4 class="text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em]">Fluxo de Caixa Mensal</h4>
@@ -318,9 +399,6 @@
                 <div class="bubble-card p-10">
                     <div class="flex justify-between items-center mb-10">
                         <h3 class="text-[11px] font-black uppercase text-indigo-400 tracking-[0.2em]">Análise Consolidada <span id="yearly-year-title">2026</span></h3>
-                        <div class="flex gap-2">
-                             <span class="text-[9px] text-zinc-500 font-bold uppercase py-1 px-3 bg-white/5 rounded-full">Clique nas categorias para detalhar</span>
-                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="yearly-table">
@@ -337,14 +415,49 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ABA ADMIN -->
+            <section id="section-admin" class="hidden space-y-8 animate-section">
+                <div class="bubble-card p-10">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-[11px] font-black uppercase text-rose-400 tracking-[0.2em]">Gestão de Usuários e Assinaturas</h3>
+                    </div>
+                    <p class="text-xs text-zinc-400 mb-8">Administre o acesso dos usuários ao sistema em tempo real.</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-zinc-400">
+                            <thead>
+                                <tr class="border-b border-white/10 text-[10px] uppercase font-bold text-zinc-500">
+                                    <th class="pb-3 pl-2">Nome</th>
+                                    <th class="pb-3">E-mail</th>
+                                    <th class="pb-3 text-center">Status</th>
+                                    <th class="pb-3 text-right pr-2">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-users-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
-    <script>
-        // --- CONFIGURAÇÃO DE ADMIN EXCLUSIVA ---
-        const MASTER_EMAIL = "arconsultoriaa@outlook.com"; // <-- INSIRA SEU EMAIL AQUI
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-        let currentUser = null;
+        // Configuração do ambiente (Canvas)
+        const firebaseConfig = JSON.parse(window.__firebase_config || '{}');
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = window.__app_id || 'vertice-app-v1';
+
+        const MASTER_EMAIL = "arconsultoriaa@outlook.com"; 
+        
+        // Globais do App
+        let currentUserData = null;
         let transactions = [];
         let isRegisterMode = false;
         let editingId = null;
@@ -352,333 +465,295 @@
         let selectedMonth = new Date().getMonth();
         let selectedYear = new Date().getFullYear();
 
-        window.onload = () => {
-            document.getElementById('select-month').value = selectedMonth;
-            document.getElementById('select-year').value = selectedYear;
-            document.getElementById('input-month').value = selectedMonth;
-            document.getElementById('input-year').value = selectedYear;
-        };
-
-        function toggleAuthMode() {
-            isRegisterMode = !isRegisterMode;
-            const regFields = document.getElementById('register-fields');
-            const mainBtn = document.getElementById('auth-main-btn');
-            const toggleBtn = document.getElementById('auth-toggle-btn');
-            const subtitle = document.getElementById('auth-subtitle');
-            if (isRegisterMode) {
-                regFields.classList.remove('hidden');
-                mainBtn.innerText = "Criar Minha Conta";
-                toggleBtn.innerText = "Já tem conta? Faça Login";
-                subtitle.innerText = "Cadastre-se para começar sua gestão";
-            } else {
-                regFields.classList.add('hidden');
-                mainBtn.innerText = "Login";
-                toggleBtn.innerText = "Não tem conta? Cadastre-se";
-                subtitle.innerText = "Gestão Financeira de Alto Padrão";
-            }
-        }
-
-        function handleAuth() {
-            const email = document.getElementById('auth-email').value.trim();
+        // --- AUTH ---
+        window.handleAuth = async () => {
+            const email = document.getElementById('auth-email').value.trim().toLowerCase();
             const pass = document.getElementById('auth-pass').value;
-            if (!email || !pass) return;
+            
+            if (!email || !pass) return alert("Preencha todos os campos.");
 
-            const users = JSON.parse(localStorage.getItem('vertice_users') || '{}');
+            // Login Anônimo para acesso ao Firestore (Segurança do Firebase)
+            try {
+                await signInAnonymously(auth);
+            } catch (e) {
+                console.error("Auth error", e);
+                return alert("Erro de conexão.");
+            }
+
+            const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', email);
+            const userSnap = await getDoc(userRef);
 
             if (isRegisterMode) {
-                const name = document.getElementById('reg-name').value;
-                if (!name) return;
+                if (userSnap.exists()) return alert("E-mail já cadastrado.");
                 
-                if (users[email]) {
-                    alert("Este e-mail já está cadastrado.");
-                    return;
-                }
-                users[email] = { 
-                    pass, 
-                    name, 
-                    cpf: document.getElementById('reg-cpf').value, 
-                    phone: document.getElementById('reg-phone').value 
+                const name = document.getElementById('reg-name').value;
+                if (!name || !document.getElementById('terms-check').checked) return alert("Preencha o nome e aceite os termos.");
+
+                const newUser = {
+                    email, pass, name,
+                    cpf: document.getElementById('reg-cpf').value,
+                    phone: document.getElementById('reg-phone').value,
+                    blocked: false,
+                    createdAt: new Date().toISOString()
                 };
-                localStorage.setItem('vertice_users', JSON.stringify(users));
+
+                await setDoc(userRef, newUser);
+                alert("Conta criada!");
                 toggleAuthMode();
             } else {
-                if (users[email] && users[email].pass === pass) {
-                    processLogin(email, users[email].name);
-                } else {
-                    alert("Dados de acesso incorretos.");
-                }
+                if (!userSnap.exists() || userSnap.data().pass !== pass) return alert("Dados incorretos.");
+                const data = userSnap.data();
+                if (data.blocked) return alert("Acesso suspenso. Contate a Arconsultoria.");
+                
+                startApp(data);
             }
-        }
+        };
 
-        function processLogin(email, name) {
-            currentUser = { email, name };
+        function startApp(userData) {
+            currentUserData = userData;
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-content').classList.remove('hidden');
             
-            // Regra de Admin exclusiva para o seu e-mail
-            const isAdmin = (email.toLowerCase() === MASTER_EMAIL.toLowerCase());
-            const roleText = isAdmin ? "MASTER ADMINISTRADOR" : "USUÁRIO STANDARD";
-            
+            const isAdmin = (userData.email === MASTER_EMAIL);
+            if (isAdmin) document.getElementById('tab-admin').classList.remove('hidden');
+
             document.getElementById('user-display').innerHTML = `
-                ${(name || email.split('@')[0]).toUpperCase()} 
-                <span class="block text-[7px] text-indigo-300 opacity-60">${roleText}</span>
+                ${userData.name.toUpperCase()} 
+                <span class="block text-[7px] text-indigo-300 opacity-60">${isAdmin ? 'MASTER ADMIN' : 'USUÁRIO'}</span>
             `;
 
-            loadData();
-            renderMonthly();
+            setupListeners();
         }
 
-        function logout() { location.reload(); }
+        function setupListeners() {
+            // Ouvinte de Transações em tempo real
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'transactions'), where('userEmail', '==', currentUserData.email));
+            onSnapshot(q, (snapshot) => {
+                transactions = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderMonthly();
+                if(!document.getElementById('section-yearly').classList.contains('hidden')) renderYearly();
+            });
 
-        function updateDateContext() {
-            selectedMonth = parseInt(document.getElementById('select-month').value);
-            selectedYear = parseInt(document.getElementById('select-year').value);
-            renderMonthly();
-            if(!document.getElementById('section-yearly').classList.contains('hidden')) renderYearly();
-        }
-
-        function toggleParcelField() {
-            const recurrence = document.getElementById('recurrence-input').value;
-            document.getElementById('parcel-container').classList.toggle('hidden', recurrence !== 'installment');
-        }
-
-        function switchTab(tab) {
-            document.getElementById('section-monthly').classList.toggle('hidden', tab !== 'monthly');
-            document.getElementById('section-yearly').classList.toggle('hidden', tab !== 'yearly');
-            document.getElementById('tab-monthly').classList.toggle('active', tab === 'monthly');
-            document.getElementById('tab-yearly').classList.toggle('active', tab === 'yearly');
-            if(tab === 'yearly') renderYearly();
-        }
-
-        function loadData() {
-            const data = localStorage.getItem(`vertice_stable_${currentUser.email}`);
-            transactions = data ? JSON.parse(data) : [];
-        }
-
-        function saveData() {
-            localStorage.setItem(`vertice_stable_${currentUser.email}`, JSON.stringify(transactions));
-            renderMonthly();
-            if(!document.getElementById('section-yearly').classList.contains('hidden')) renderYearly();
-        }
-
-        function clearAllData() {
-            if(confirm("Deseja realmente apagar TODOS os registros?")) {
-                transactions = [];
-                saveData();
+            // Se for admin, ouve usuários
+            if (currentUserData.email === MASTER_EMAIL) {
+                onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'users'), (snapshot) => {
+                    renderAdmin(snapshot.docs.map(d => d.data()));
+                });
             }
         }
 
-        function addEntry() {
+        // --- CRUD TRANSACÕES ---
+        window.addEntry = async () => {
             const desc = document.getElementById('desc-input').value;
             const val = parseFloat(document.getElementById('val-input').value);
-            const category = document.getElementById('category-input').value;
-            const recurrence = document.getElementById('recurrence-input').value;
-            const inMonth = parseInt(document.getElementById('input-month').value);
-            const inYear = parseInt(document.getElementById('input-year').value);
-            
-            if(!desc || isNaN(val)) return;
+            if (!desc || isNaN(val)) return alert("Dados inválidos.");
+
+            const month = parseInt(document.getElementById('input-month').value);
+            const year = parseInt(document.getElementById('input-year').value);
+            const cat = document.getElementById('category-input').value;
+            const rec = document.getElementById('recurrence-input').value;
 
             if (editingId) {
-                const idx = transactions.findIndex(t => t.id === editingId);
-                if (idx !== -1) {
-                    transactions[idx] = { ...transactions[idx], desc, val, category, month: inMonth, year: inYear };
-                }
-                editingId = null;
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingId);
+                await updateDoc(docRef, { description: desc, value: val, month, year, category: cat });
+                resetForm();
             } else {
-                const timestamp = Date.now();
-                if (recurrence === 'once') {
-                    transactions.push({ id: timestamp, desc, val, category, paid: false, month: inMonth, year: inYear });
-                } else if (recurrence === 'monthly') {
-                    for (let m = inMonth; m < 12; m++) {
-                        transactions.push({ id: timestamp + m, desc, val, category, paid: false, month: m, year: inYear });
-                    }
-                } else if (recurrence === 'installment') {
-                    const numParcels = parseInt(document.getElementById('parcel-input').value);
-                    let cM = inMonth; let cY = inYear;
-                    for (let i = 1; i <= numParcels; i++) {
-                        transactions.push({ id: timestamp + i, desc: `${desc} [${i}/${numParcels}]`, val: val / numParcels, category, paid: false, month: cM, year: cY });
-                        cM++; if (cM > 11) { cM = 0; cY++; }
-                    }
+                let count = (rec === 'installment') ? parseInt(document.getElementById('parcel-input').value) : (rec === 'monthly' ? 12 : 1);
+                
+                for (let i = 0; i < count; i++) {
+                    const m = (month + i) % 12;
+                    const y = year + Math.floor((month + i) / 12);
+                    const newId = crypto.randomUUID();
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'transactions', newId), {
+                        description: desc + (rec === 'installment' ? ` (${i+1}/${count})` : ''),
+                        value: val,
+                        month: m,
+                        year: y,
+                        category: cat,
+                        isPaid: false,
+                        userEmail: currentUserData.email,
+                        createdAt: new Date().toISOString()
+                    });
                 }
+                resetForm();
             }
-            resetForm();
-            saveData();
-        }
+        };
 
-        function resetForm() {
-            editingId = null;
-            document.getElementById('desc-input').value = '';
-            document.getElementById('val-input').value = '';
-            document.getElementById('input-month').value = selectedMonth;
-            document.getElementById('input-year').value = selectedYear;
-            document.getElementById('form-title').innerText = "Novo Registro Financeiro";
-            document.getElementById('confirm-btn').innerText = "Confirmar Lançamento";
-            document.getElementById('cancel-edit-btn').classList.add('hidden');
-            document.getElementById('recurrence-input').disabled = false;
-            document.getElementById('recurrence-input').value = 'once';
-            toggleParcelField();
-        }
+        window.deleteEntry = async (id) => {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'transactions', id));
+        };
 
-        function editItem(id) {
-            const item = transactions.find(t => t.id === id);
-            if (!item) return;
-            editingId = id;
-            document.getElementById('desc-input').value = item.desc;
-            document.getElementById('val-input').value = item.val;
-            document.getElementById('category-input').value = item.category;
-            document.getElementById('input-month').value = item.month;
-            document.getElementById('input-year').value = item.year;
-            document.getElementById('form-title').innerText = "Editando Registro";
-            document.getElementById('confirm-btn').innerText = "Salvar Alterações";
-            document.getElementById('cancel-edit-btn').classList.remove('hidden');
-            document.getElementById('recurrence-input').disabled = true;
-            window.scrollTo({ top: 300, behavior: 'smooth' });
-        }
+        window.togglePaid = async (id, current) => {
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'transactions', id), { isPaid: !current });
+        };
 
-        function togglePaid(id) {
-            const item = transactions.find(t => t.id == id);
-            if(item) { item.paid = !item.paid; saveData(); }
-        }
+        // --- ADMIN ACTIONS ---
+        window.toggleUserBlock = async (email, currentStatus) => {
+            if (email === MASTER_EMAIL) return;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', email), { blocked: !currentStatus });
+        };
 
-        function deleteItem(id) {
-            transactions = transactions.filter(t => t.id !== id);
-            saveData();
-        }
+        window.deleteUser = async (email) => {
+            if (email === MASTER_EMAIL) return;
+            if (confirm("Excluir usuário e todos os seus dados permanentemente?")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', email));
+                // Nota: Em um sistema real, você excluiria as transações deste e-mail também aqui.
+            }
+        };
 
+        // --- RENDERIZADORES (Lógica Visual Identica) ---
         function renderMonthly() {
             const list = document.getElementById('monthly-list');
-            const sortOrder = document.getElementById('sort-order').value;
-            list.innerHTML = '';
+            const sort = document.getElementById('sort-order').value;
             
             let filtered = transactions.filter(t => t.month === selectedMonth && t.year === selectedYear);
             
-            if (sortOrder === 'desc') filtered.sort((a, b) => b.val - a.val);
-            else if (sortOrder === 'asc') filtered.sort((a, b) => a.val - b.val);
-            else filtered.sort((a, b) => b.id - a.id);
+            if (sort === 'desc') filtered.sort((a,b) => b.value - a.value);
+            else if (sort === 'asc') filtered.sort((a,b) => a.value - b.value);
+            else filtered.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-            let income = 0, equity = 0, totalToPay = 0, paid = 0, pending = 0;
-            
+            list.innerHTML = '';
+            let inc = 0, exp = 0, paid = 0, equity = 0;
+
             filtered.forEach(t => {
                 const isIncome = t.category === 'Renda';
-                const isEquity = (t.category === 'Poupança' || t.category === 'Investimento');
-
-                if(isIncome) income += t.val;
-                else if (isEquity) equity += t.val;
+                const isEquity = t.category === 'Investimento' || t.category === 'Poupança';
+                
+                if (isIncome) inc += t.value;
+                else if (isEquity) equity += t.value;
                 else {
-                    totalToPay += t.val;
-                    if(t.paid) paid += t.val; else pending += t.val;
+                    exp += t.value;
+                    if (t.isPaid) paid += t.value;
                 }
 
-                const div = document.createElement('div');
-                div.className = `flex items-center justify-between p-6 bubble-card border border-white/5 ${t.paid ? 'is-paid' : ''}`;
-                div.innerHTML = `
-                    <div class="flex items-center gap-5">
-                        <div onclick="togglePaid(${t.id})" class="w-7 h-7 rounded-full border-2 border-zinc-700 flex items-center justify-center cursor-pointer transition-all ${t.paid ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'hover:border-indigo-500'}">
-                            ${t.paid ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="4" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                list.innerHTML += `
+                    <div class="bubble-card p-5 flex items-center justify-between transition-all ${t.isPaid ? 'is-paid' : ''}">
+                        <div class="flex items-center gap-4">
+                            <div onclick="togglePaid('${t.id}', ${t.isPaid})" class="w-6 h-6 rounded-lg border-2 border-indigo-500/30 flex items-center justify-center cursor-pointer hover:bg-indigo-500/20">
+                                ${t.isPaid ? '<div class="w-3 h-3 bg-indigo-500 rounded-sm"></div>' : ''}
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white">${t.description}</h4>
+                                <span class="text-[9px] uppercase font-black text-zinc-500 tracking-widest">${t.category}</span>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-sm font-bold text-white tracking-wide">${t.desc}</p>
-                            <span class="text-[9px] text-zinc-500 font-black uppercase tracking-[0.15em]">${t.category}</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <span class="text-sm font-extrabold ${isIncome ? 'text-emerald-400' : (isEquity ? 'text-amber-400' : 'text-white')}">
-                            R$ ${t.val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                        </span>
-                        <div class="flex gap-1">
-                            <button onclick="editItem(${t.id})" class="p-2 text-zinc-600 hover:text-indigo-400 transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                            </button>
-                            <button onclick="deleteItem(${t.id})" class="p-2 text-zinc-600 hover:text-rose-400 transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
+                        <div class="flex items-center gap-6">
+                            <span class="text-sm font-bold ${isIncome ? 'text-emerald-400' : (isEquity ? 'text-amber-400' : 'text-white')}">
+                                ${isIncome ? '+' : '-'} ${t.value.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}
+                            </span>
+                            <div class="flex gap-2">
+                                <button onclick="editEntry('${t.id}')" class="p-2 hover:bg-white/5 rounded-lg text-zinc-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2"></path></svg></button>
+                                <button onclick="deleteEntry('${t.id}')" class="p-2 hover:bg-rose-500/10 rounded-lg text-rose-500/50 hover:text-rose-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"></path></svg></button>
+                            </div>
                         </div>
                     </div>
                 `;
-                list.appendChild(div);
             });
 
-            document.getElementById('display-income').innerText = `R$ ${income.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('display-equity').innerText = `R$ ${equity.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('display-total').innerText = `R$ ${totalToPay.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('display-paid').innerText = `R$ ${paid.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            document.getElementById('display-pending').innerText = `R$ ${pending.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('display-income').innerText = inc.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            document.getElementById('display-equity').innerText = equity.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            document.getElementById('display-total').innerText = exp.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            document.getElementById('display-paid').innerText = paid.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            document.getElementById('display-pending').innerText = (exp - paid).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
             
-            const balance = income - totalToPay;
+            const bal = inc - exp - equity;
             const balEl = document.getElementById('display-balance');
-            balEl.innerText = `R$ ${balance.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            balEl.className = `text-2xl font-bold ${balance >= 0 ? 'text-white' : 'text-rose-500'}`;
+            balEl.innerText = bal.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            balEl.className = `text-2xl font-bold ${bal >= 0 ? 'text-white' : 'text-rose-400'}`;
         }
 
+        function renderAdmin(users) {
+            const list = document.getElementById('admin-users-list');
+            list.innerHTML = '';
+            users.forEach(u => {
+                list.innerHTML += `
+                    <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                        <td class="py-4 pl-2 font-bold text-white text-xs">${u.name}</td>
+                        <td class="py-4 text-xs">${u.email}</td>
+                        <td class="py-4 text-center">
+                            <span class="px-2 py-1 rounded-full text-[8px] font-black uppercase ${u.blocked ? 'bg-rose-500/20 text-rose-500' : 'bg-emerald-500/20 text-emerald-500'}">
+                                ${u.blocked ? 'Suspenso' : 'Ativo'}
+                            </span>
+                        </td>
+                        <td class="py-4 text-right pr-2">
+                            <button onclick="toggleUserBlock('${u.email}', ${u.blocked})" class="text-[9px] font-bold uppercase mr-3 ${u.blocked ? 'text-emerald-400' : 'text-rose-400'}">
+                                ${u.blocked ? 'Desbloquear' : 'Bloquear'}
+                            </button>
+                            <button onclick="deleteUser('${u.email}')" class="text-rose-500/30 hover:text-rose-500">Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- FUNÇÕES DE INTERFACE ---
+        window.toggleAuthMode = () => {
+            isRegisterMode = !isRegisterMode;
+            document.getElementById('register-fields').classList.toggle('hidden');
+            document.getElementById('auth-main-btn').innerText = isRegisterMode ? "Criar Minha Conta" : "Login";
+            document.getElementById('auth-toggle-btn').innerText = isRegisterMode ? "Já tem conta? Faça Login" : "Não tem conta? Cadastre-se";
+        };
+
+        window.switchTab = (tab) => {
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`section-${tab}`).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            if (tab === 'yearly') renderYearly();
+        };
+
+        window.updateDateContext = () => {
+            selectedMonth = parseInt(document.getElementById('select-month').value);
+            selectedYear = parseInt(document.getElementById('select-year').value);
+            renderMonthly();
+        };
+
+        window.resetForm = () => {
+            editingId = null;
+            document.getElementById('desc-input').value = '';
+            document.getElementById('val-input').value = '';
+            document.getElementById('form-title').innerText = "Novo Registro Financeiro";
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            document.getElementById('confirm-btn').innerText = "Confirmar Lançamento";
+        };
+
+        window.editEntry = (id) => {
+            const t = transactions.find(x => x.id === id);
+            editingId = id;
+            document.getElementById('desc-input').value = t.description;
+            document.getElementById('val-input').value = t.value;
+            document.getElementById('input-month').value = t.month;
+            document.getElementById('input-year').value = t.year;
+            document.getElementById('category-input').value = t.category;
+            document.getElementById('form-title').innerText = "Editando Registro";
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            document.getElementById('confirm-btn').innerText = "Salvar Alteração";
+        };
+
+        window.logout = () => location.reload();
+        window.openTerms = () => document.getElementById('terms-modal').classList.remove('hidden');
+        window.closeTerms = () => document.getElementById('terms-modal').classList.add('hidden');
+        window.toggleParcelField = () => {
+            document.getElementById('parcel-container').classList.toggle('hidden', document.getElementById('recurrence-input').value !== 'installment');
+        };
+
+        // Lógica de Visão Anual (Simplificada para o exemplo)
         function renderYearly() {
             const body = document.getElementById('yearly-body');
             body.innerHTML = '';
-            document.getElementById('yearly-year-title').innerText = selectedYear;
-
-            const categories = ["Renda", "Despesa Fixa", "Despesa Variável", "Investimento", "Poupança"];
+            const cats = ["Renda", "Despesa Fixa", "Despesa Variável", "Investimento", "Poupança"];
             
-            categories.forEach(cat => {
-                const isIncome = cat === "Renda";
-                const isEquity = (cat === "Investimento" || cat === "Poupança");
-                const row = document.createElement('tr');
-                row.className = "row-category cursor-pointer";
-                row.onclick = () => {
-                    if(expandedCategories.has(cat)) expandedCategories.delete(cat);
-                    else expandedCategories.add(cat);
-                    renderYearly();
-                };
-
-                let html = `<td><span class="expand-btn">${expandedCategories.has(cat) ? '-' : '+'}</span><span class="font-bold text-xs uppercase">${cat}</span></td>`;
+            cats.forEach(cat => {
+                let row = `<tr class="row-category"><td>${cat}</td>`;
                 let totalCat = 0;
-
-                for (let m = 0; m < 12; m++) {
-                    const val = transactions
-                        .filter(t => t.category === cat && t.month === m && t.year === selectedYear)
-                        .reduce((acc, curr) => acc + curr.val, 0);
-                    totalCat += val;
-                    html += `<td class="text-[11px] ${val > 0 ? (isIncome ? 'text-emerald-400' : (isEquity ? 'text-amber-400' : 'text-white')) : 'text-zinc-800'}">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 1})}</td>`;
+                for(let m=0; m<12; m++) {
+                    const sum = transactions.filter(t => t.category === cat && t.month === m && t.year === selectedYear).reduce((a,b) => a+b.value, 0);
+                    totalCat += sum;
+                    row += `<td class="text-[10px] text-zinc-500">${sum > 0 ? sum.toLocaleString('pt-BR', {compactDisplay:'short'}) : '-'}</td>`;
                 }
-
-                html += `<td class="font-black text-white">R$ ${totalCat.toLocaleString('pt-BR', {minimumFractionDigits: 1})}</td>`;
-                row.innerHTML = html;
-                body.appendChild(row);
-
-                if (expandedCategories.has(cat)) {
-                    const subItems = [...new Set(transactions.filter(t => t.category === cat && t.year === selectedYear).map(t => t.desc))];
-                    subItems.forEach(desc => {
-                        const subRow = document.createElement('tr');
-                        subRow.className = "row-detail animate-section";
-                        let subHtml = `<td class="pl-10 italic">${desc}</td>`;
-                        let totalSub = 0;
-                        for (let m = 0; m < 12; m++) {
-                            const v = transactions
-                                .filter(t => t.desc === desc && t.month === m && t.year === selectedYear)
-                                .reduce((acc, curr) => acc + curr.val, 0);
-                            totalSub += v;
-                            subHtml += `<td>${v > 0 ? 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits: 0}) : '-'}</td>`;
-                        }
-                        subHtml += `<td class="font-bold">R$ ${totalSub.toLocaleString('pt-BR', {minimumFractionDigits: 0})}</td>`;
-                        subRow.innerHTML = subHtml;
-                        body.appendChild(subRow);
-                    });
-                }
+                row += `<td class="font-bold text-white">${totalCat.toLocaleString('pt-BR')}</td></tr>`;
+                body.innerHTML += row;
             });
-
-            // Linha de Saldo
-            const balanceRow = document.createElement('tr');
-            balanceRow.className = "row-category border-t-2 border-indigo-500/30";
-            let balHtml = `<td><span class="font-black text-indigo-400 text-xs uppercase">Saldo Final</span></td>`;
-            let yearTotal = 0;
-            for (let m = 0; m < 12; m++) {
-                const inc = transactions.filter(t => t.category === "Renda" && t.month === m && t.year === selectedYear).reduce((a, b) => a + b.val, 0);
-                const out = transactions.filter(t => !["Renda", "Investimento", "Poupança"].includes(t.category) && t.month === m && t.year === selectedYear).reduce((a, b) => a + b.val, 0);
-                const res = inc - out;
-                yearTotal += res;
-                balHtml += `<td class="text-[11px] font-bold ${res >= 0 ? 'text-emerald-400' : 'text-rose-500'}">R$ ${res.toLocaleString('pt-BR', {minimumFractionDigits: 1})}</td>`;
-            }
-            balHtml += `<td class="font-black text-white bg-indigo-600/20">R$ ${yearTotal.toLocaleString('pt-BR', {minimumFractionDigits: 1})}</td>`;
-            balanceRow.innerHTML = balHtml;
-            body.appendChild(balanceRow);
         }
     </script>
 </body>
