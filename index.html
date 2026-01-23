@@ -49,12 +49,6 @@
             transition: all 0.3s ease;
             appearance: none;
         }
-        /* Estilo específico para input date para ficar bonito no dark mode */
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-            opacity: 0.5;
-            cursor: pointer;
-        }
         select option {
             background-color: var(--dropdown-bg);
             color: white;
@@ -339,7 +333,11 @@
                             <input type="number" id="val-input" placeholder="0,00" class="w-full p-4 text-sm">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Mês Ref.</label>
+                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Data de Vencimento</label>
+                            <input type="date" id="due-date-input" class="w-full p-4 text-sm">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Mês</label>
                             <select id="input-month" class="w-full p-4 text-sm">
                                 <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
                                 <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
@@ -347,16 +345,11 @@
                                 <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
                             </select>
                         </div>
-                        <div class="md:col-span-1">
+                        <div class="md:col-span-2">
                             <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Ano</label>
                             <input type="number" id="input-year" value="2026" class="w-full p-4 text-sm">
                         </div>
-                        <!-- NOVO CAMPO: DATA DE VENCIMENTO -->
-                        <div class="md:col-span-2">
-                            <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Vencimento</label>
-                            <input type="date" id="date-input" class="w-full p-4 text-sm text-zinc-400">
-                        </div>
-                        <div class="md:col-span-2">
+                        <div class="md:col-span-3">
                             <label class="text-[9px] font-bold text-zinc-500 uppercase ml-2 mb-2 block">Categoria</label>
                             <select id="category-input" class="w-full p-4 text-sm">
                                 <option value="Despesa Fixa">Despesa Fixa</option>
@@ -394,13 +387,11 @@
                         <h4 class="text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em]">Fluxo de Caixa Mensal</h4>
                         <div class="flex items-center gap-3">
                             <span class="text-[9px] font-bold text-zinc-600 uppercase">Ordenar por:</span>
-                            <select id="sort-order" onchange="renderMonthly()" class="!py-1 !px-3 !text-[10px] !rounded-lg !w-auto cursor-pointer">
+                            <select id="sort-order" onchange="renderMonthly()" class="!py-1 !px-3 !text-[10px] !rounded-lg !w-auto">
                                 <option value="newest">Mais Recentes</option>
                                 <option value="desc">Maior Valor</option>
                                 <option value="asc">Menor Valor</option>
-                                <!-- NOVAS OPÇÕES DE ORDENAÇÃO -->
-                                <option value="dateAsc">Vencimento (Mais Próximo)</option>
-                                <option value="dateDesc">Vencimento (Mais Distante)</option>
+                                <option value="dueDate">Data de Vencimento</option>
                             </select>
                         </div>
                     </div>
@@ -471,16 +462,6 @@
         // --- FUNÇÃO DE FORMATAÇÃO DE MOEDA PADRÃO BRASIL ---
         const formatCurrency = (value) => {
             return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        };
-        
-        // --- FUNÇÃO DE FORMATAÇÃO DE DATA ---
-        const formatDate = (dateString) => {
-            if (!dateString) return "";
-            const date = new Date(dateString);
-            // Corrige fuso horário adicionando os minutos de offset
-            const userTimezoneOffset = date.getTimezoneOffset() * 60000;
-            const correctedDate = new Date(date.getTime() + userTimezoneOffset);
-            return correctedDate.toLocaleDateString('pt-BR');
         };
 
         let currentUser = null;
@@ -601,417 +582,365 @@
             selectedMonth = parseInt(document.getElementById('select-month').value);
             selectedYear = parseInt(document.getElementById('select-year').value);
             renderMonthly();
+            if(!document.getElementById('section-yearly').classList.contains('hidden')) renderYearly();
+        }
+
+        function toggleParcelField() {
+            const recurrence = document.getElementById('recurrence-input').value;
+            document.getElementById('parcel-container').classList.toggle('hidden', recurrence !== 'installment');
         }
 
         function switchTab(tab) {
-            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('section-monthly').classList.toggle('hidden', tab !== 'monthly');
+            document.getElementById('section-yearly').classList.toggle('hidden', tab !== 'yearly');
+            document.getElementById('section-admin').classList.toggle('hidden', tab !== 'admin');
             
-            document.getElementById(`section-${tab}`).classList.remove('hidden');
-            document.getElementById(`tab-${tab}`).classList.add('active');
-
-            if (tab === 'yearly') renderYearly();
-            if (tab === 'admin') renderAdminPanel(); // Carregar admin se for a aba admin
+            document.getElementById('tab-monthly').classList.toggle('active', tab === 'monthly');
+            document.getElementById('tab-yearly').classList.toggle('active', tab === 'yearly');
+            
+            // Esconder controles de data na aba admin
+            document.getElementById('date-controls').style.visibility = (tab === 'admin') ? 'hidden' : 'visible';
+            
+            // Lógica específica por aba
+            if(tab === 'yearly') renderYearly();
+            if(tab === 'admin') renderAdminPanel();
         }
 
+        // --- LÓGICA DO PAINEL ADMIN ---
+        function renderAdminPanel() {
+            const list = document.getElementById('admin-users-list');
+            list.innerHTML = '';
+            
+            const users = JSON.parse(localStorage.getItem('vertice_users') || '{}');
+            
+            Object.keys(users).forEach(email => {
+                // Não mostra o próprio admin na lista de bloqueio para evitar auto-block
+                if (email.toLowerCase() === MASTER_EMAIL.toLowerCase()) return;
+
+                const user = users[email];
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-white/5 hover:bg-white/5 transition-colors";
+                
+                const statusBadge = user.blocked 
+                    ? `<span class="bg-rose-500/20 text-rose-400 px-2 py-1 rounded text-[10px] font-bold uppercase">Bloqueado</span>`
+                    : `<span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-[10px] font-bold uppercase">Ativo</span>`;
+                
+                const blockBtn = user.blocked
+                    ? `<button onclick="toggleUserStatus('${email}')" class="text-[10px] font-bold uppercase bg-emerald-500 hover:bg-emerald-400 text-white px-3 py-1 rounded transition-colors w-20">Reativar</button>`
+                    : `<button onclick="toggleUserStatus('${email}')" class="text-[10px] font-bold uppercase bg-rose-500 hover:bg-rose-400 text-white px-3 py-1 rounded transition-colors w-20">Bloquear</button>`;
+
+                const deleteBtn = `<button onclick="deleteUser('${email}')" class="ml-2 text-[10px] font-bold uppercase bg-zinc-700 hover:bg-rose-600 text-white px-3 py-1 rounded transition-colors" title="Excluir Usuário">Excluir</button>`;
+
+                tr.innerHTML = `
+                    <td class="py-4 pl-2 font-medium text-white">${user.name || 'Sem nome'}</td>
+                    <td class="py-4">${email}</td>
+                    <td class="py-4">${user.cpf || '-'}</td>
+                    <td class="py-4">${user.phone || '-'}</td>
+                    <td class="py-4 text-center">${statusBadge}</td>
+                    <td class="py-4 text-right pr-2 whitespace-nowrap">${blockBtn}${deleteBtn}</td>
+                `;
+                list.appendChild(tr);
+            });
+            
+            if (list.innerHTML === '') {
+                list.innerHTML = `<tr><td colspan="6" class="text-center py-8 opacity-50">Nenhum outro usuário cadastrado.</td></tr>`;
+            }
+        }
+
+        function toggleUserStatus(email) {
+            const users = JSON.parse(localStorage.getItem('vertice_users') || '{}');
+            if (users[email]) {
+                users[email].blocked = !users[email].blocked;
+                localStorage.setItem('vertice_users', JSON.stringify(users));
+                renderAdminPanel(); // Atualiza a tabela
+            }
+        }
+
+        function deleteUser(email) {
+            if(confirm(`Tem certeza que deseja excluir o usuário ${email}? Esta ação é permanente e removerá o acesso.`)) {
+                const users = JSON.parse(localStorage.getItem('vertice_users') || '{}');
+                delete users[email];
+                localStorage.setItem('vertice_users', JSON.stringify(users));
+                renderAdminPanel();
+            }
+        }
+
+        // --- LÓGICA DE DADOS FINANCEIROS (MANTIDA) ---
+
         function loadData() {
-            const data = localStorage.getItem(`vertice_data_${currentUser.email}`);
+            const data = localStorage.getItem(`vertice_stable_${currentUser.email}`);
             transactions = data ? JSON.parse(data) : [];
         }
 
         function saveData() {
-            localStorage.setItem(`vertice_data_${currentUser.email}`, JSON.stringify(transactions));
+            localStorage.setItem(`vertice_stable_${currentUser.email}`, JSON.stringify(transactions));
             renderMonthly();
-        }
-
-        function toggleParcelField() {
-            const rec = document.getElementById('recurrence-input').value;
-            const container = document.getElementById('parcel-container');
-            if (rec === 'installment') container.classList.remove('hidden');
-            else container.classList.add('hidden');
-        }
-
-        function addEntry() {
-            const desc = document.getElementById('desc-input').value;
-            const val = parseFloat(document.getElementById('val-input').value);
-            const category = document.getElementById('category-input').value;
-            const monthInput = document.getElementById('input-month');
-            const yearInput = document.getElementById('input-year');
-            const recurrence = document.getElementById('recurrence-input').value;
-            
-            // Novo Campo de Data
-            const dateInputVal = document.getElementById('date-input').value; 
-
-            if (!desc || isNaN(val)) {
-                alert("Preencha a descrição e o valor.");
-                return;
-            }
-
-            if (editingId) {
-                // Lógica de edição simples (sem recorrência complexa na edição para simplificar)
-                const index = transactions.findIndex(t => t.id === editingId);
-                if (index !== -1) {
-                    transactions[index].desc = desc;
-                    transactions[index].value = val;
-                    transactions[index].category = category;
-                    transactions[index].month = parseInt(monthInput.value);
-                    transactions[index].year = parseInt(yearInput.value);
-                    transactions[index].dueDate = dateInputVal; // Salva a data editada
-                }
-                editingId = null;
-                resetForm();
-            } else {
-                let targetMonth = parseInt(monthInput.value);
-                let targetYear = parseInt(yearInput.value);
-                
-                // Lógica para calcular a data de vencimento correta nas recorrências
-                let currentDueDateObj = dateInputVal ? new Date(dateInputVal) : null;
-                // Ajuste de fuso horário para manipulação
-                if(currentDueDateObj) {
-                     currentDueDateObj.setMinutes(currentDueDateObj.getMinutes() + currentDueDateObj.getTimezoneOffset());
-                }
-
-                if (recurrence === 'once') {
-                    transactions.push({
-                        id: Date.now(),
-                        desc, value, category,
-                        month: targetMonth,
-                        year: targetYear,
-                        paid: false,
-                        dueDate: dateInputVal // Salva a data
-                    });
-                } else if (recurrence === 'monthly') {
-                    for (let i = 0; i < 12; i++) {
-                        // Calcula a nova data de vencimento mantendo o dia
-                        let nextDueDate = "";
-                        if (currentDueDateObj) {
-                            // Cria uma nova data baseada no ano e mês do loop
-                            const nextDate = new Date(targetYear, targetMonth, currentDueDateObj.getDate());
-                            nextDueDate = nextDate.toISOString().split('T')[0];
-                        }
-
-                        transactions.push({
-                            id: Date.now() + i,
-                            desc: `${desc} (${i+1}/12)`,
-                            value, category,
-                            month: targetMonth,
-                            year: targetYear,
-                            paid: false,
-                            dueDate: nextDueDate // Salva a data calculada
-                        });
-                        
-                        targetMonth++;
-                        if (targetMonth > 11) {
-                            targetMonth = 0;
-                            targetYear++;
-                        }
-                    }
-                } else if (recurrence === 'installment') {
-                    const parcels = parseInt(document.getElementById('parcel-input').value);
-                    const parcelValue = val / parcels;
-                    
-                    for (let i = 0; i < parcels; i++) {
-                        // Calcula a nova data de vencimento mantendo o dia
-                        let nextDueDate = "";
-                        if (currentDueDateObj) {
-                            const nextDate = new Date(targetYear, targetMonth, currentDueDateObj.getDate());
-                            nextDueDate = nextDate.toISOString().split('T')[0];
-                        }
-
-                        transactions.push({
-                            id: Date.now() + i,
-                            desc: `${desc} (${i+1}/${parcels})`,
-                            value: parcelValue,
-                            category,
-                            month: targetMonth,
-                            year: targetYear,
-                            paid: false,
-                            dueDate: nextDueDate // Salva a data calculada
-                        });
-                        
-                        targetMonth++;
-                        if (targetMonth > 11) {
-                            targetMonth = 0;
-                            targetYear++;
-                        }
-                    }
-                }
-            }
-            saveData();
-            resetForm();
-        }
-
-        function editEntry(id) {
-            const t = transactions.find(x => x.id === id);
-            if (!t) return;
-            
-            document.getElementById('desc-input').value = t.desc;
-            document.getElementById('val-input').value = t.value;
-            document.getElementById('category-input').value = t.category;
-            document.getElementById('input-month').value = t.month;
-            document.getElementById('input-year').value = t.year;
-            
-            // Preenche a data se existir
-            if (t.dueDate) {
-                document.getElementById('date-input').value = t.dueDate;
-            } else {
-                document.getElementById('date-input').value = "";
-            }
-
-            // Desabilita recorrência na edição para evitar conflitos
-            document.getElementById('recurrence-input').disabled = true;
-            document.getElementById('parcel-container').classList.add('hidden');
-            
-            editingId = id;
-            document.getElementById('form-title').innerText = "Editando Registro";
-            document.getElementById('confirm-btn').innerText = "Salvar Alteração";
-            document.getElementById('cancel-edit-btn').classList.remove('hidden');
-            
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function deleteEntry(id) {
-            if (confirm("Tem certeza?")) {
-                transactions = transactions.filter(t => t.id !== id);
-                saveData();
-            }
-        }
-
-        function togglePaid(id) {
-            const t = transactions.find(x => x.id === id);
-            if (t) {
-                t.paid = !t.paid;
-                saveData();
-            }
-        }
-
-        function resetForm() {
-            document.getElementById('desc-input').value = "";
-            document.getElementById('val-input').value = "";
-            document.getElementById('date-input').value = ""; // Limpa a data
-            document.getElementById('recurrence-input').value = "once";
-            document.getElementById('recurrence-input').disabled = false;
-            document.getElementById('parcel-container').classList.add('hidden');
-            
-            editingId = null;
-            document.getElementById('form-title').innerText = "Novo Registro Financeiro";
-            document.getElementById('confirm-btn').innerText = "Confirmar Lançamento";
-            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            if(!document.getElementById('section-yearly').classList.contains('hidden')) renderYearly();
         }
 
         function clearAllData() {
-            if(confirm("ATENÇÃO: Isso apagará TODOS os seus registros. Continuar?")) {
+            if(confirm("Deseja realmente apagar TODOS os registros?")) {
                 transactions = [];
                 saveData();
             }
         }
 
+        function addEntry() {
+            const desc = document.getElementById('desc-input').value;
+            const val = parseFloat(document.getElementById('val-input').value);
+            const dueDate = document.getElementById('due-date-input').value;
+            const category = document.getElementById('category-input').value;
+            const recurrence = document.getElementById('recurrence-input').value;
+            const inMonth = parseInt(document.getElementById('input-month').value);
+            const inYear = parseInt(document.getElementById('input-year').value);
+            
+            if(!desc || isNaN(val)) return;
+
+            if (editingId) {
+                const idx = transactions.findIndex(t => t.id === editingId);
+                if (idx !== -1) {
+                    transactions[idx] = { ...transactions[idx], desc, val, dueDate, category, month: inMonth, year: inYear };
+                }
+                editingId = null;
+            } else {
+                const timestamp = Date.now();
+                if (recurrence === 'once') {
+                    transactions.push({ id: timestamp, desc, val, dueDate, category, paid: false, month: inMonth, year: inYear });
+                } else if (recurrence === 'monthly') {
+                    for (let m = inMonth; m < 12; m++) {
+                        transactions.push({ id: timestamp + m, desc, val, dueDate, category, paid: false, month: m, year: inYear });
+                    }
+                } else if (recurrence === 'installment') {
+                    const numParcels = parseInt(document.getElementById('parcel-input').value);
+                    let cM = inMonth; let cY = inYear;
+                    for (let i = 1; i <= numParcels; i++) {
+                        transactions.push({ id: timestamp + i, desc: `${desc} [${i}/${numParcels}]`, val: val / numParcels, dueDate, category, paid: false, month: cM, year: cY });
+                        cM++; if (cM > 11) { cM = 0; cY++; }
+                    }
+                }
+            }
+            resetForm();
+            saveData();
+        }
+
+        function resetForm() {
+            editingId = null;
+            document.getElementById('desc-input').value = '';
+            document.getElementById('val-input').value = '';
+            document.getElementById('due-date-input').value = '';
+            document.getElementById('input-month').value = selectedMonth;
+            document.getElementById('input-year').value = selectedYear;
+            document.getElementById('form-title').innerText = "Novo Registro Financeiro";
+            document.getElementById('confirm-btn').innerText = "Confirmar Lançamento";
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            document.getElementById('recurrence-input').disabled = false;
+            document.getElementById('recurrence-input').value = 'once';
+            toggleParcelField();
+        }
+
+        function editItem(id) {
+            const item = transactions.find(t => t.id === id);
+            if (!item) return;
+            editingId = id;
+            document.getElementById('desc-input').value = item.desc;
+            document.getElementById('val-input').value = item.val;
+            document.getElementById('due-date-input').value = item.dueDate || '';
+            document.getElementById('category-input').value = item.category;
+            document.getElementById('input-month').value = item.month;
+            document.getElementById('input-year').value = item.year;
+            document.getElementById('form-title').innerText = "Editando Registro";
+            document.getElementById('confirm-btn').innerText = "Salvar Alterações";
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            document.getElementById('recurrence-input').disabled = true;
+            window.scrollTo({ top: 300, behavior: 'smooth' });
+        }
+
+        function togglePaid(id) {
+            const item = transactions.find(t => t.id == id);
+            if(item) { item.paid = !item.paid; saveData(); }
+        }
+
+        function deleteItem(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            saveData();
+        }
+
         function renderMonthly() {
             const list = document.getElementById('monthly-list');
-            list.innerHTML = "";
-            
-            const filtered = transactions.filter(t => t.month === selectedMonth && t.year === selectedYear);
             const sortOrder = document.getElementById('sort-order').value;
+            list.innerHTML = '';
+            
+            let filtered = transactions.filter(t => t.month === selectedMonth && t.year === selectedYear);
+            
+            if (sortOrder === 'desc') filtered.sort((a, b) => b.val - a.val);
+            else if (sortOrder === 'asc') filtered.sort((a, b) => a.val - b.val);
+            else if (sortOrder === 'dueDate') filtered.sort((a, b) => {
+                const aDate = a.dueDate ? new Date(a.dueDate) : new Date('9999-12-31');
+                const bDate = b.dueDate ? new Date(b.dueDate) : new Date('9999-12-31');
+                return aDate - bDate;
+            });
+            else filtered.sort((a, b) => b.id - a.id);
 
-            // Lógica de Ordenação Atualizada
-            filtered.sort((a, b) => {
-                if (sortOrder === 'newest') return b.id - a.id;
-                if (sortOrder === 'desc') return b.value - a.value;
-                if (sortOrder === 'asc') return a.value - b.value;
-                if (sortOrder === 'dateAsc') {
-                    // Trata datas vazias como se fossem "muito longe" ou "muito perto" dependendo da necessidade
-                    if (!a.dueDate) return 1; 
-                    if (!b.dueDate) return -1;
-                    return new Date(a.dueDate) - new Date(b.dueDate);
+            let income = 0, equity = 0, totalToPay = 0, paid = 0, pending = 0;
+            
+            filtered.forEach(t => {
+                const isIncome = t.category === 'Renda';
+                const isEquity = (t.category === 'Poupança' || t.category === 'Investimento');
+
+                if(isIncome) income += t.val;
+                else if (isEquity) equity += t.val;
+                else {
+                    totalToPay += t.val;
+                    if(t.paid) paid += t.val; else pending += t.val;
                 }
-                if (sortOrder === 'dateDesc') {
-                    if (!a.dueDate) return 1;
-                    if (!b.dueDate) return -1;
-                    return new Date(b.dueDate) - new Date(a.dueDate);
-                }
+
+                const div = document.createElement('div');
+                div.className = `flex items-center justify-between p-6 bubble-card border border-white/5 ${t.paid ? 'is-paid' : ''}`;
+                const dueDateDisplay = t.dueDate ? new Date(t.dueDate).toLocaleDateString('pt-BR') : 'Não informado';
+                div.innerHTML = `
+                    <div class="flex items-center gap-5">
+                        <div onclick="togglePaid(${t.id})" class="cursor-pointer w-10 h-10 rounded-full flex items-center justify-center border ${t.paid ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600 hover:border-emerald-500'} transition-all">
+                            ${t.paid ? '<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm text-white">${t.desc}</p>
+                            <span class="text-[10px] text-zinc-500 uppercase tracking-widest font-bold bg-white/5 px-2 py-1 rounded mt-1 inline-block">${t.category}</span>
+                            <p class="text-[9px] text-zinc-400 mt-1">Vence em: ${dueDateDisplay}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-base ${isIncome ? 'text-emerald-400' : isEquity ? 'text-amber-400' : 'text-white'}">
+                            ${isIncome || isEquity ? '+' : '-'} ${formatCurrency(t.val)}
+                        </p>
+                        <div class="flex gap-3 justify-end mt-2 opacity-50 hover:opacity-100 transition-opacity">
+                            <button onclick="editItem(${t.id})" class="text-indigo-400 hover:text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                            <button onclick="deleteItem(${t.id})" class="text-rose-400 hover:text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(div);
             });
 
-            let income = 0, expense = 0, paid = 0;
-
-            if (filtered.length === 0) {
-                list.innerHTML = `<div class="text-center py-10 text-zinc-600 text-xs italic">Nenhum registro neste mês.</div>`;
-            } else {
-                filtered.forEach(t => {
-                    const isIncome = t.category === 'Renda' || t.category === 'Investimento'; // Investimento pode ser entrada ou saída dependendo da visão, aqui tratando como ativo
-                    
-                    if (t.category === 'Renda') income += t.value;
-                    else {
-                        expense += t.value;
-                        if (t.paid) paid += t.value;
-                    }
-
-                    const borderClass = t.paid ? 'border-emerald-500/30' : (isIncome ? 'border-indigo-500/30' : 'border-rose-500/30');
-                    const textClass = isIncome ? 'text-emerald-400' : 'text-rose-400';
-                    const bgClass = t.paid ? 'bg-emerald-500/5' : 'bg-white/5';
-
-                    // Formatação da data de vencimento para o card
-                    const dateDisplay = t.dueDate ? 
-                        `<div class="flex items-center gap-1 text-[9px] text-zinc-400 font-bold uppercase tracking-wider bg-black/30 px-2 py-1 rounded-md">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            ${formatDate(t.dueDate)}
-                        </div>` : '';
-
-                    list.innerHTML += `
-                        <div class="bubble-card p-4 flex items-center justify-between border-l-2 ${borderClass} ${bgClass} ${t.paid ? 'is-paid' : ''} group hover:scale-[1.01] transition-transform">
-                            <div class="flex items-center gap-4">
-                                <input type="checkbox" ${t.paid ? 'checked' : ''} onchange="togglePaid(${t.id})" class="h-5 w-5 rounded border-gray-600 text-indigo-600 focus:ring-indigo-500 bg-transparent">
-                                <div>
-                                    <p class="font-bold text-xs text-white uppercase tracking-wide">${t.desc}</p>
-                                    <div class="flex items-center gap-2 mt-1">
-                                        <span class="text-[9px] text-zinc-500 uppercase tracking-widest">${t.category}</span>
-                                        ${dateDisplay}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <span class="font-bold text-sm ${textClass}">${isIncome ? '+' : '-'} ${formatCurrency(t.value)}</span>
-                                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onclick="editEntry(${t.id})" class="text-zinc-500 hover:text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
-                                    <button onclick="deleteEntry(${t.id})" class="text-zinc-500 hover:text-rose-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
             document.getElementById('display-income').innerText = formatCurrency(income);
-            document.getElementById('display-equity').innerText = formatCurrency(income - (expense - paid)); // Simples cálculo de sobra
-            document.getElementById('display-total').innerText = formatCurrency(expense);
+            document.getElementById('display-equity').innerText = formatCurrency(equity);
+            document.getElementById('display-total').innerText = formatCurrency(totalToPay);
             document.getElementById('display-paid').innerText = formatCurrency(paid);
-            document.getElementById('display-pending').innerText = formatCurrency(expense - paid);
+            document.getElementById('display-pending').innerText = formatCurrency(pending);
             
-            const balance = income - expense;
-            const balEl = document.getElementById('display-balance');
-            balEl.innerText = formatCurrency(balance);
+            const balance = income - paid; 
+            const balanceEl = document.getElementById('display-balance');
+            balanceEl.innerText = formatCurrency(balance);
             
-            // Cor dinâmica do saldo
-            const cardBal = document.getElementById('card-balance');
-            cardBal.className = `bubble-card p-6 border-l-4 ${balance >= 0 ? 'border-l-emerald-500' : 'border-l-rose-500'}`;
-            balEl.className = `text-2xl font-bold ${balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+            const cardBalance = document.getElementById('card-balance');
+            if(balance >= 0) {
+                cardBalance.className = "bubble-card p-6 border-l-4 border-l-emerald-500";
+                balanceEl.className = "text-2xl font-bold text-emerald-400";
+            } else {
+                cardBalance.className = "bubble-card p-6 border-l-4 border-l-rose-500";
+                balanceEl.className = "text-2xl font-bold text-rose-400";
+            }
         }
 
         function renderYearly() {
             document.getElementById('yearly-year-title').innerText = selectedYear;
             const tbody = document.getElementById('yearly-body');
-            tbody.innerHTML = "";
+            tbody.innerHTML = '';
 
             const categories = ["Renda", "Despesa Fixa", "Despesa Variável", "Investimento", "Poupança"];
-            const allYearTransactions = transactions.filter(t => t.year === selectedYear);
+            const currentYearData = transactions.filter(t => t.year === selectedYear);
+
+            // CALCULAR TOTAIS MENSAIS PARA A LINHA FINAL
+            let monthlyBalances = Array(12).fill(0);
+            let totalYearBalance = 0;
+
+            currentYearData.forEach(t => {
+                if (t.category === 'Renda') {
+                    monthlyBalances[t.month] += t.val;
+                    totalYearBalance += t.val;
+                } else {
+                    // Considera todo o resto como saída de caixa para o cálculo de saldo
+                    monthlyBalances[t.month] -= t.val;
+                    totalYearBalance -= t.val;
+                }
+            });
 
             categories.forEach(cat => {
-                let rowHtml = `<tr class="row-category group hover:bg-white/5 transition-colors cursor-pointer" onclick="toggleCategoryDetails('${cat}')">
-                    <td class="font-bold text-xs text-white uppercase flex items-center">
-                        <span class="expand-btn">${expandedCategories.has(cat) ? '-' : '+'}</span>
-                        ${cat}
-                    </td>`;
-                
-                let yearlyTotal = 0;
                 let monthlyTotals = Array(12).fill(0);
+                let catTotal = 0;
+                let catItems = [];
 
-                const catTrans = allYearTransactions.filter(t => t.category === cat);
-                
-                catTrans.forEach(t => {
-                    monthlyTotals[t.month] += t.value;
-                    yearlyTotal += t.value;
+                currentYearData.filter(t => t.category === cat).forEach(t => {
+                    monthlyTotals[t.month] += t.val;
+                    catTotal += t.val;
+                    catItems.push(t);
                 });
 
-                for(let i=0; i<12; i++) {
-                    const val = monthlyTotals[i];
-                    rowHtml += `<td class="text-center text-[10px] font-medium ${val > 0 ? 'text-zinc-300' : 'text-zinc-700'}">${val > 0 ? formatCurrency(val) : '-'}</td>`;
-                }
+                const isExpanded = expandedCategories.has(cat);
+                const rowClass = cat === 'Renda' ? 'text-emerald-400' : cat.includes('Despesa') ? 'text-rose-400' : 'text-amber-400';
 
-                rowHtml += `<td class="font-bold text-[10px] text-white text-center">${formatCurrency(yearlyTotal)}</td></tr>`;
+                // Linha Principal
+                const tr = document.createElement('tr');
+                tr.className = "row-category hover:bg-white/5 transition-colors cursor-pointer";
+                tr.onclick = (e) => {
+                    if(e.target.tagName === 'TD' || e.target.tagName === 'SPAN') {
+                        if(expandedCategories.has(cat)) expandedCategories.delete(cat);
+                        else expandedCategories.add(cat);
+                        renderYearly();
+                    }
+                };
                 
-                tbody.innerHTML += rowHtml;
+                let cells = `
+                    <td class="font-bold text-[11px] uppercase ${rowClass}">
+                        <span class="expand-btn">${isExpanded ? '▼' : '▶'}</span> ${cat}
+                    </td>`;
+                
+                monthlyTotals.forEach(val => {
+                    cells += `<td class="text-[10px] ${val > 0 ? 'text-white' : 'text-zinc-600'}">${formatCurrency(val)}</td>`;
+                });
+                
+                cells += `<td class="font-bold text-[11px] text-white bg-white/5">${formatCurrency(catTotal)}</td>`;
+                tr.innerHTML = cells;
+                tbody.appendChild(tr);
 
-                // LINHAS DE DETALHES (SUB-ITENS)
-                if (expandedCategories.has(cat)) {
-                    // Agrupar por descrição para simplificar a visão anual
-                    const groupedDesc = {};
-                    catTrans.forEach(t => {
-                        const cleanDesc = t.desc.split('(')[0].trim(); // Remove contagem de parcelas para agrupar
-                        if (!groupedDesc[cleanDesc]) groupedDesc[cleanDesc] = Array(12).fill(0);
-                        groupedDesc[cleanDesc][t.month] += t.value;
+                // Linhas de Detalhe (Expandidas)
+                if (isExpanded) {
+                    const uniqueDesc = [...new Set(catItems.map(i => i.desc))];
+                    uniqueDesc.forEach(desc => {
+                        let descTotals = Array(12).fill(0);
+                        let descTotal = 0;
+                        catItems.filter(i => i.desc === desc).forEach(i => {
+                            descTotals[i.month] += i.val;
+                            descTotal += i.val;
+                        });
+
+                        const trDetail = document.createElement('tr');
+                        trDetail.className = "row-detail animate-section";
+                        let dCells = `<td class="pl-8 text-zinc-500 italic border-l border-white/10">${desc}</td>`;
+                        descTotals.forEach(val => {
+                             dCells += `<td class="${val > 0 ? 'text-zinc-400' : 'text-zinc-800'}">${formatCurrency(val)}</td>`;
+                        });
+                        dCells += `<td class="text-zinc-400 font-bold">${formatCurrency(descTotal)}</td>`;
+                        trDetail.innerHTML = dCells;
+                        tbody.appendChild(trDetail);
                     });
-
-                    for (const [desc, vals] of Object.entries(groupedDesc)) {
-                        let detailRow = `<tr class="row-detail animate-section">
-                            <td class="pl-8 italic opacity-70 border-l border-indigo-500/20">${desc}</td>`;
-                        let detailTotal = 0;
-                        for(let i=0; i<12; i++) {
-                            detailRow += `<td class="text-center opacity-70">${vals[i] > 0 ? formatCurrency(vals[i]) : ''}</td>`;
-                            detailTotal += vals[i];
-                        }
-                        detailRow += `<td class="text-center opacity-70 font-bold">${formatCurrency(detailTotal)}</td></tr>`;
-                        tbody.innerHTML += detailRow;
-                    }
                 }
             });
-        }
 
-        function toggleCategoryDetails(cat) {
-            if (expandedCategories.has(cat)) expandedCategories.delete(cat);
-            else expandedCategories.add(cat);
-            renderYearly();
-        }
-
-        // --- FUNÇÕES DE ADMINISTRAÇÃO ---
-        function renderAdminPanel() {
-            const list = document.getElementById('admin-users-list');
-            list.innerHTML = "";
-            const users = JSON.parse(localStorage.getItem('vertice_users') || '{}');
+            // LINHA FINAL DE SALDO LÍQUIDO
+            const trTotal = document.createElement('tr');
+            trTotal.className = "font-bold bg-white/5 border-t-2 border-white/20";
+            let totalCells = `<td class="p-3 text-[11px] uppercase text-indigo-400 rounded-l-2xl">Saldo Líquido</td>`;
             
-            // Array de [email, dados]
-            const entries = Object.entries(users);
-
-            if (entries.length === 0) {
-                list.innerHTML = `<tr><td colspan="6" class="p-4 text-center">Nenhum usuário cadastrado.</td></tr>`;
-                return;
-            }
-
-            entries.forEach(([email, data]) => {
-                // Não permite bloquear o Master Admin
-                const isMaster = (email.toLowerCase() === MASTER_EMAIL.toLowerCase());
-                const statusClass = data.blocked ? "text-rose-500 bg-rose-500/10" : "text-emerald-500 bg-emerald-500/10";
-                const statusText = data.blocked ? "BLOQUEADO" : "ATIVO";
-                
-                let actionBtn = "";
-                if (!isMaster) {
-                    if (data.blocked) {
-                         actionBtn = `<button onclick="toggleUserBlock('${email}', false)" class="text-[9px] font-bold uppercase text-emerald-400 border border-emerald-400/20 px-3 py-1 rounded hover:bg-emerald-400/10">Desbloquear</button>`;
-                    } else {
-                         actionBtn = `<button onclick="toggleUserBlock('${email}', true)" class="text-[9px] font-bold uppercase text-rose-400 border border-rose-400/20 px-3 py-1 rounded hover:bg-rose-400/10">Bloquear</button>`;
-                    }
-                } else {
-                    actionBtn = `<span class="text-[9px] text-zinc-600 font-bold uppercase">Master</span>`;
-                }
-
-                list.innerHTML += `
-                    <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td class="py-3 pl-2 font-bold text-white">${data.name || '-'}</td>
-                        <td class="py-3 text-zinc-400">${email}</td>
-                        <td class="py-3 text-zinc-500">${data.cpf || '-'}</td>
-                        <td class="py-3 text-zinc-500">${data.phone || '-'}</td>
-                        <td class="py-3 text-center"><span class="px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${statusClass}">${statusText}</span></td>
-                        <td class="py-3 text-right pr-2">${actionBtn}</td>
-                    </tr>
-                `;
+            monthlyBalances.forEach(val => {
+                let colorClass = val === 0 ? 'text-zinc-600' : val > 0 ? 'text-emerald-400' : 'text-rose-400';
+                totalCells += `<td class="p-3 text-[10px] ${colorClass}">${formatCurrency(val)}</td>`;
             });
-        }
-
-        function toggleUserBlock(email, shouldBlock) {
-            const users = JSON.parse(localStorage.getItem('vertice_users') || '{}');
-            if (users[email]) {
-                users[email].blocked = shouldBlock;
-                localStorage.setItem('vertice_users', JSON.stringify(users));
-                renderAdminPanel(); // Atualiza a tabela
-            }
+            
+            let totalColorClass = totalYearBalance === 0 ? 'text-zinc-500' : totalYearBalance > 0 ? 'text-emerald-400' : 'text-rose-400';
+            totalCells += `<td class="p-3 text-[11px] ${totalColorClass} rounded-r-2xl">${formatCurrency(totalYearBalance)}</td>`;
+            
+            trTotal.innerHTML = totalCells;
+            tbody.appendChild(trTotal);
         }
     </script>
 </body>
