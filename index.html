@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
@@ -63,7 +64,7 @@
             background: rgba(255, 255, 255, 0.07) !important;
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
         }
-        /* Estilo específico para input type="date" (agora usando Flatpickr) */
+        /* Estilo específico para input type="date" (usando Flatpickr) */
         .flatpickr-input {
             background: var(--input-bg) !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -73,12 +74,27 @@
             width: 100%;
             padding: 1rem;
             font-size: 0.875rem;
+            position: relative;
         }
         .flatpickr-input:focus {
             border-color: var(--accent) !important;
             outline: none;
             background: rgba(255, 255, 255, 0.07) !important;
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+        /* Adicionar seta para parecer select */
+        .flatpickr-input::after {
+            content: '';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid rgba(255, 255, 255, 0.5);
+            pointer-events: none;
         }
         /* Checkbox Customizado */
         input[type="checkbox"] {
@@ -145,7 +161,7 @@
         }
         .btn-primary:hover { opacity: 0.9; transform: scale(1.02); }
         .animate-section { animation: slideIn 0.5s ease-out forwards; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from: opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .hidden { display: none !important; }
         
         .yearly-table {
