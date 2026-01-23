@@ -96,6 +96,31 @@
             border-top: 4px solid rgba(255, 255, 255, 0.5);
             pointer-events: none;
         }
+        /* Personalização do calendário Flatpickr para fundo preto */
+        .flatpickr-calendar {
+            background: #000 !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8) !important;
+        }
+        .flatpickr-calendar .flatpickr-day {
+            color: white !important;
+            background: transparent !important;
+        }
+        .flatpickr-calendar .flatpickr-day:hover {
+            background: rgba(99, 102, 241, 0.2) !important;
+        }
+        .flatpickr-calendar .flatpickr-day.selected {
+            background: var(--accent) !important;
+            color: white !important;
+        }
+        .flatpickr-calendar .flatpickr-monthDropdown-months,
+        .flatpickr-calendar .flatpickr-current-month {
+            color: white !important;
+        }
+        .flatpickr-calendar .flatpickr-weekday {
+            color: rgba(255, 255, 255, 0.7) !important;
+        }
         /* Checkbox Customizado */
         input[type="checkbox"] {
             appearance: none;
